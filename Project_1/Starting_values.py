@@ -1,5 +1,6 @@
 import tqdm as tqdm
 import math as math
+import matplotlib.pyplot as plt
 
 #get gravitational constant
 G=4*math.pi**2
@@ -12,6 +13,9 @@ Sun_mass=1
 Jupiter_mass=0.001
 Trojan1_mass=0
 Trojan2_mass=0
+
+masses=[Sun_mass,Jupiter_mass,Trojan1_mass,Trojan2_mass]
+names=["Sun","Jupiter","Trojan1","Trojan2"]
 
 x=[0,0,-4.503,4.503]
 y=[0, 5.2, 2.6, 2.6]
@@ -43,25 +47,76 @@ def Der_W(W,t):
     #make a 4x6 matrix of zeros
     W_derivat=np.zeros((len(W),len(W[0])))
     for i in range(3):
-        W_derivat[:,i]=W[:,i]+W[:,i+3]
+        W_derivat[:,i]=W[:,i+3]
 
+    #for x, y and z
     for ii in [0,1,2]:
         r=W[:,ii]
-        len_vector_r=np.sqrt(r[0]**2+r[1]**2+r[2]**2)
+        for position in range(len(r)):
+            len_vector_r=math.sqrt((r[position]-r[0])**2)
+            W_derivat[:,ii+3]=-G*masses[position]*r[position]/len_vector_r**3
+    return W_derivat
 
-        print(r)
-        print(len_vector_r)
+#for making a 4th order Runge-Kutta
+def RK4(W,t,h,Der_W):
+    k1=h*Der_W(W,t)
+    k2=h*Der_W(W+0.5*k1,t+0.5*h)
+    k3=h*Der_W(W+0.5*k2,t+0.5*h)
+    k4=h*Der_W(W+k3,t+h)
+    W_next=W+(k1+2*k2+2*k3+k4)/6
+    return W_next
+
+# To store the results
+result = np.zeros((int((t_end-t)/h)+1, len(W), len(W[0])))
+
+# Iterate over time steps using tqdm to display a progress bar
+for i, t in enumerate(tqdm.tqdm(np.arange(t, t_end, h))):
+    result[i] = W
+    W = RK4(W, t, h, Der_W)
 
 
-    return(W_derivat)
-    
-
-    
-
-print(Der_W(W,t))
 
 
+import matplotlib.animation as animation
 
-#"""
+# Set up the figure and axes for the animation
+fig, ax = plt.subplots()
+ax.set_xlim(-100, 100)
+ax.set_ylim(-100, 100)
+
+# Initialize the scatter plot objects for the bodies and add labels
+#scatters = [ax.scatter(W[i, 0], W[i, 1], label='Body {}'.format(i)) for i in range(len(W))]
+scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], s=100, label='{}'.format(names[i])) for i in range(4)]
 
 
+
+
+# Function to initialize the animation
+def init():
+    return scatters
+
+# Function to update the animation at each time step 
+# make sure it fits the entire animation
+
+def animate(i):
+    ax.set_title('Time: {:.2f} years'.format(i*h))
+    for j, scatter in enumerate(scatters):
+        scatter.set_offsets([result[i, j, 0], result[i, j, 1]])
+    return scatters
+
+
+
+# Create the animation with PillowWriter
+ani = animation.FuncAnimation(fig, animate, frames=1000, init_func=init, blit=True, interval=1)
+
+
+
+# Save the animation
+from matplotlib.animation import PillowWriter
+ani.save('Starting_values.gif', writer=PillowWriter(fps=30))
+
+
+
+# Display the animation
+plt.legend()
+plt.show()
