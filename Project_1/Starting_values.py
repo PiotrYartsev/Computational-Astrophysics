@@ -150,7 +150,7 @@ ani = animation.FuncAnimation(fig, animate, frames=result.shape[0], init_func=in
 
 # Save the animation
 from matplotlib.animation import PillowWriter
-ani.save('Starting_values.gif', writer=PillowWriter(fps=30))
+ani.save('Computational-Astrophysics/Project_1/Starting_values.gif', writer=PillowWriter(fps=30))
 
 
 
