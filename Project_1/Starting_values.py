@@ -1,81 +1,57 @@
 import tqdm as tqdm
-
+import math as math
 
 #get gravitational constant
-G=6.67408*10**(-11)
+G=4*math.pi**2
+
+h=0.01
+t=0
+t_end=300
+
+Sun_mass=1
+Jupiter_mass=0.001
+Trojan1_mass=0
+Trojan2_mass=0
+
+x=[0,0,-4.503,4.503]
+y=[0, 5.2, 2.6, 2.6]
+z=[0,0,0,0]
+
+v_x=[0, -2.75674, -1.38, -1.38]
+v_y=[0,0, -2.39, 2.39]
+v_z=[0,0,0,0]
+
+#make an matrix of the starting values
+import numpy as np
+
+W=np.array([[x[0],y[0],z[0],v_x[0],v_y[0],v_z[0]],[x[1],y[1],z[1],v_x[1],v_y[1],v_z[1]],[x[2],y[2],z[2],v_x[2],v_y[2],v_z[2]],[x[3],y[3],z[3],v_x[3],v_y[3],v_z[3]]])
 
 
-Sun=[1,0,0,0,0,0,0]
-Jupiter=[0.001,0,5.2,0,-2.75674,0,0]
-Trojan1=[0,-4.503,2.6,0,-1.38,-2.39,0]
-Trojan2=[0,-4.503,2.6,0,-1.38,2.39,0]
-
-W=[Sun,Jupiter,Trojan1,Trojan2]
+print(W)
 
 
-#improt lamda
-
-
-
-
-
-
-#Get the force from one object on another
-def function_one_iteration(G,W,i,j):
-    object_i=W[i]
-    object_j=W[j]
-    x_i=object_i[1]
-    y_i=object_i[2]
-    x_j=object_j[1]
-    y_j=object_j[2]
-    r=((x_i-x_j)**2+(y_i-y_j)**2)**(1/2)
-    g=G*object_j[0]/r**2
-    g_x=g*(x_i-x_j)/r
-    g_y=g*(y_i-y_j)/r
-    return([g_x,g_y])
-
-def Force_function(G,W):
-    Force=[0,0]
-    for i in range(len(W)):
-        for j in range(len(W)):
-            if i!=j:
-                g_x,g_y=function_one_iteration(G,W,i,j)
-                Force[0]=Force[0]+g_x
-                Force[1]=Force[1]+g_y
-    return(Force)
-
-
-def fourth_order_runge_kutta(function, current_time, timestep, W):
-    f_a=function(current_time, W)
-    W_b=W+timestep*f_a/2
-    f_b=function(current_time+timestep/2, W_b)
-    W_c=W+timestep*f_b/2
-    f_c=function(current_time+timestep/2, W_c)
-    W_d=W+timestep*f_c
-    f_d=function(current_time+timestep, W_d)
-    return W+timestep*(f_a+2*f_b+2*f_c+f_d)/6
-
-
-timestep=0.01
-current_time=0
-
-total_time=300
-
-
-change_in_position=[]
-change_in_position.append(W)
-while current_time<total_time:
-    W=fourth_order_runge_kutta(Force_function, current_time, timestep, W)
-    current_time=current_time+timestep
-    change_in_position.append(W)
-
-for i in change_in_position:
-    print(i[0])
+print(len(W))
+print(len(W[0]))
 
 
 
+def Der_W(W,t):
 
+    x,y,z,v_x,v_y,v_z=W
 
+    print(x,y,z,v_x,v_y,v_z)
 
-
+    #make a 4x6 matrix of zeros
+    W_derivat=np.zeros((4,6))
+    W_derivat[0]=v_x
+    W_derivat[1]=v_y
+    W_derivat[2]=v_z
     
+
+
+
+
+
+#"""
+
+
