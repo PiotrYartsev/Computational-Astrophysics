@@ -35,6 +35,9 @@ print(len(W[0]))
 
 
 
+
+
+
 def Der_W(W,t):
 
     #make a 4x6 matrix of zeros
@@ -42,8 +45,12 @@ def Der_W(W,t):
     for i in range(3):
         W_derivat[:,i]=W[:,i]+W[:,i+3]
 
+    for ii in [0,1,2]:
+        r=W[:,ii]
+        len_vector_r=np.sqrt(r[0]**2+r[1]**2+r[2]**2)
 
-    
+        print(r)
+        print(len_vector_r)
 
 
     return(W_derivat)
