@@ -37,18 +37,21 @@ print(len(W[0]))
 
 def Der_W(W,t):
 
-    x,y,z,v_x,v_y,v_z=W
-
-    print(x,y,z,v_x,v_y,v_z)
-
     #make a 4x6 matrix of zeros
-    W_derivat=np.zeros((4,6))
-    W_derivat[0]=v_x
-    W_derivat[1]=v_y
-    W_derivat[2]=v_z
+    W_derivat=np.zeros((len(W),len(W[0])))
+    for i in range(3):
+        W_derivat[:,i]=W[:,i]+W[:,i+3]
+
+
     
 
 
+    return(W_derivat)
+    
+
+    
+
+print(Der_W(W,t))
 
 
 
