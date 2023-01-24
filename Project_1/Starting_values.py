@@ -81,11 +81,15 @@ import matplotlib.animation as animation
 
 # Set up the figure and axes for the animation
 fig, ax = plt.subplots()
-ax.set_xlim(-100, 100)
-ax.set_ylim(-100, 100)
+
 
 # Initialize the scatter plot objects for the bodies and add labels
-#scatters = [ax.scatter(W[i, 0], W[i, 1], label='Body {}'.format(i)) for i in range(len(W))]
+
+#rewrite results to only keep every 10th value
+result=result[::10]
+
+
+
 scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], s=100, label='{}'.format(names[i])) for i in range(4)]
 
 
@@ -100,14 +104,47 @@ def init():
 
 def animate(i):
     ax.set_title('Time: {:.2f} years'.format(i*h))
+    #add a legend
+    ax.legend()
+    
+
+    #add x and y labels
+    ax.set_xlabel('x (AU)')
+    ax.set_ylabel('y (AU)')
+
+    #set the limits of the plot that it fits the entire animation 
+    
+
+    largest_x=-10000
+    smallest_x=10000
+    largest_y=-10000
+    smallest_y=10000
+
+
     for j, scatter in enumerate(scatters):
         scatter.set_offsets([result[i, j, 0], result[i, j, 1]])
+        if result[i, j, 0]>largest_x:
+            largest_x=result[i, j, 0]
+        if result[i, j, 0]<smallest_x:
+            smallest_x=result[i, j, 0]
+        if result[i, j, 1]>largest_y:
+            largest_y=result[i, j, 1]
+        if result[i, j, 1]<smallest_y:
+            smallest_y=result[i, j, 1]
+    if largest_x>-smallest_x:
+        ax.set_xlim(-largest_x-5, largest_x+5)
+    else:
+        ax.set_xlim(smallest_x-5, -smallest_x+5)
+    if largest_y>-smallest_y:
+        ax.set_ylim(-largest_y-5, largest_y+5)
+    else:
+        ax.set_ylim(smallest_y-5, -smallest_y+5)
     return scatters
 
 
 
 # Create the animation with PillowWriter
-ani = animation.FuncAnimation(fig, animate, frames=1000, init_func=init, blit=True, interval=1)
+ani = animation.FuncAnimation(fig, animate, frames=result.shape[0], init_func=init, blit=True, interval=1)
 
 
 
@@ -118,5 +155,6 @@ ani.save('Starting_values.gif', writer=PillowWriter(fps=30))
 
 
 # Display the animation
-plt.legend()
-plt.show()
+
+#plt.show()
+print("Done")
