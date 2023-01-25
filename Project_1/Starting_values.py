@@ -34,9 +34,6 @@ W=np.array([[x[0],y[0],z[0],v_x[0],v_y[0],v_z[0]],[x[1],y[1],z[1],v_x[1],v_y[1],
 print(W)
 
 
-print(len(W))
-print(len(W[0]))
-
 
 
 
@@ -104,112 +101,53 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 
+
 # Set up the figure and axes for the animation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
+
+#keep only every 500th value
+result=result[::500]
+
+
+#make sure the sun is in the center and all the other planets position is relative to the sun
+
+
 
 # Initialize the scatter plot objects for the bodies
 scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=100) for i in range(4)]
 
 # Function to update the animation at each time step
+
+# in reulst find the largest x y and z values and use them to set the limits of the plot
+x_max=np.max(result[:,:,0])
+x_min=np.min(result[:,:,0])
+y_max=np.max(result[:,:,1])
+y_min=np.min(result[:,:,1])
+z_max=np.max(result[:,:,2])
+z_min=np.min(result[:,:,2])
 def update(num):
     for i, scatter in enumerate(scatters):
-        scatter.set_offsets(result[num,:,:3])
-        scatter.set_3d_properties(result[num, i, 2])
+        scatter.set_offsets(result[num,:,:2])
+        scatter.set_3d_properties(result[num, i, 2],zdir='z')
+        ax.set_xlim(x_min,x_max)
+        ax.set_ylim(y_min,y_max)
+        ax.set_zlim(z_min,z_max)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        ax.set_title('Solar system')
+        
 
-# Create the animation using the update function and the number of frames
-ani = FuncAnimation(fig, update, frames=range(0, result.shape[0], 10), repeat=True)
+
+# Create the animation
+ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=1, blit=False)
+
+# Save the animation
+#ani.save('solar_system.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+
+
 
 # Display the animation
 plt.show()
 
-
-
-"""
-import matplotlib.animation as animation
-
-# Set up the figure and axes for the animation
-fig, ax = plt.subplots()
-
-
-# Initialize the scatter plot objects for the bodies and add labels
-
-#rewrite results to only keep every 10th value
-result=result[::100]
-
-
-
-scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], s=100, label='{}'.format(names[i])) for i in range(4)]
-
-
-
-
-# Function to initialize the animation
-def init():
-    return scatters
-
-# Function to update the animation at each time step 
-# make sure it fits the entire animation
-
-def animate(i):
-    ax.set_title('Time: {:.2f} years'.format(i*h))
-    #add a legend
-    ax.legend()
-    
-
-    #add x and y labels
-    ax.set_xlabel('x (AU)')
-    ax.set_ylabel('y (AU)')
-
-    #set the limits of the plot that it fits the entire animation 
-    
-
-    largest_x=-10000
-    smallest_x=10000
-    largest_y=-10000
-    smallest_y=10000
-
-
-    for j, scatter in enumerate(scatters):
-        scatter.set_offsets([result[i, j, 0], result[i, j, 1]])
-        if result[i, j, 0]>largest_x:
-            largest_x=result[i, j, 0]
-        if result[i, j, 0]<smallest_x:
-            smallest_x=result[i, j, 0]
-        if result[i, j, 1]>largest_y:
-            largest_y=result[i, j, 1]
-        if result[i, j, 1]<smallest_y:
-            smallest_y=result[i, j, 1]
-    if largest_x>-smallest_x:
-        ax.set_xlim(-largest_x-5, largest_x+5)
-    else:
-        ax.set_xlim(smallest_x-5, -smallest_x+5)
-    if largest_y>-smallest_y:
-        ax.set_ylim(-largest_y-5, largest_y+5)
-    else:
-        ax.set_ylim(smallest_y-5, -smallest_y+5)
-    return scatters
-
-
-
-# Create the animation with PillowWriter
-ani = animation.FuncAnimation(fig, animate, frames=result.shape[0], init_func=init, blit=True, interval=10, repeat=False)
-
-
-
-# Save the animation
-from matplotlib.animation import PillowWriter
-
-#as an mp4
-#ani.save('Computational-Astrophysics/Project_1/Starting_values.webm', writer = 'webm')
-ani.save("animation.mkv", writer = 'mencoder')
-
-
-
-
-# Display the animation
-
-#plt.show()
-print("Done")
-
-#"""
