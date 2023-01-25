@@ -85,7 +85,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 
-
+"""
 # Set up the figure and axes for the animation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -101,7 +101,13 @@ ax = fig.add_subplot(111, projection='3d')
 
 scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=100) for i in range(4)]
 
+
+
+# only keep every 10th point to make the animation faster
+#result=result[::10]
 # Function to update the animation at each time step
+
+
 
 # in reulst find the largest x y and z values and use them to set the limits of the plot
 x_max=np.max(result[:,:,0])
@@ -110,31 +116,41 @@ y_max=np.max(result[:,:,1])
 y_min=np.min(result[:,:,1])
 z_max=np.max(result[:,:,2])
 z_min=np.min(result[:,:,2])
+ax.set_xlim(x_min,x_max)
+ax.set_ylim(y_min,y_max)
+ax.set_zlim(z_min,z_max)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
 def update(num):
+    for text in ax.texts:
+            text.remove()
+    
+
     for i, scatter in enumerate(scatters):
         scatter.set_offsets(result[num,:,:2])
         scatter.set_3d_properties(result[num, i, 2],zdir='z')
         
-        #color the sun yellow and the planets blue
-        if i==0:
-            scatter.set_color("yellow")
-        else:
-            scatter.set_color("blue")
 
 
+        # Adding the labels for the planet
+        
+        ax.text(result[num, i, 0], result[num, i, 1], result[num, i, 2], names[i], color='black')
+    ax.set_title('Solar system {} years'.format(round(num*h*300/365,1)))
 
-        ax.set_xlim(x_min,x_max)
-        ax.set_ylim(y_min,y_max)
-        ax.set_zlim(z_min,z_max)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        ax.set_title('Solar system')
+    
+    
+    
         
 
 
 # Create the animation
-ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=1, blit=False)
+ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, blit=False)
+
+
+# Save the animation as a gif
+#ani.save('solar_system.gif', writer='imagemagick', fps=30)
+
 
 # Save the animation
 #ani.save('solar_system.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
@@ -143,4 +159,18 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=1, b
 
 # Display the animation
 plt.show()
+plt.close()
+"""
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
 
+for i in range(4):
+    ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+ax.set_title('Path of planets in the solar system')
+
+
+plt.savefig('solar_system.png')
+plt.show()
