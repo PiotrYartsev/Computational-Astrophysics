@@ -40,38 +40,22 @@ print(W)
 
 
 def Der_W(W, t):
-    x = W[:, 0]
-    y = W[:, 1]
-    z = W[:, 2]
-    vx = W[:, 3]
-    vy = W[:, 4]
-    vz = W[:, 5]
-    
-    # Repeat the positions and masses for each object
-    x_repeated = np.repeat(x, len(x)).reshape(len(x), len(x))
-    y_repeated = np.repeat(y, len(y)).reshape(len(y), len(y))
-    z_repeated = np.repeat(z, len(z)).reshape(len(z), len(z))
-    masses_repeated = np.repeat(masses, len(masses)).reshape(len(masses), len(masses))
-    
-    # Calculate the distance between each pair of objects
-    dx = x_repeated - x_repeated.T
-    dy = y_repeated - y_repeated.T
-    dz = z_repeated - z_repeated.T
-    r = np.sqrt(dx**2 + dy**2 + dz**2)
-    
-    # Set the diagonal to infinity so that the force is not calculated for an object on itself
-    np.fill_diagonal(r, np.inf)
-    
-    # Calculate the force on each object
-    f = G * masses_repeated * masses_repeated.T / r**2
-    
-    # Sum the force on each object in each direction
-    fx = np.sum(f * dx / r, axis=1)
-    fy = np.sum(f * dy / r, axis=1)
-    fz = np.sum(f * dz / r, axis=1)
-    
-    # Assemble the derivatives
-    W_derivat = np.array([vx, vy, vz, fx, fy, fz]).T
+    #initialize the derivative matrix
+    W_derivat=np.zeros((len(W),len(W[0])))
+    #iterate over the planets
+    W_derivat=np.zeros((len(W),len(W[0])))
+    for i in range(3):
+        W_derivat[:,i]=W[:,i+3]
+        
+    for i in range(4):
+        for j in range(4):
+            if i!=j:
+                r=math.sqrt((W[i,0]-W[j,0])**2+(W[i,1]-W[j,1])**2+(W[i,2]-W[j,2])**2)
+                W_derivat[i,3]+=G*masses[j]*(W[j,0]-W[i,0])/r**3
+                W_derivat[i,4]+=G*masses[j]*(W[j,1]-W[i,1])/r**3
+                W_derivat[i,5]+=G*masses[j]*(W[j,2]-W[i,2])/r**3
+        
+
     return W_derivat
 
 
@@ -106,15 +90,15 @@ from matplotlib.animation import FuncAnimation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-#keep only every 500th value
-result=result[::500]
 
 
 #make sure the sun is in the center and all the other planets position is relative to the sun
 
 
 
-# Initialize the scatter plot objects for the bodies
+# Initialize the scatter plot objects for the bodies and with labels
+
+
 scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=100) for i in range(4)]
 
 # Function to update the animation at each time step
@@ -130,6 +114,15 @@ def update(num):
     for i, scatter in enumerate(scatters):
         scatter.set_offsets(result[num,:,:2])
         scatter.set_3d_properties(result[num, i, 2],zdir='z')
+        
+        #color the sun yellow and the planets blue
+        if i==0:
+            scatter.set_color("yellow")
+        else:
+            scatter.set_color("blue")
+
+
+
         ax.set_xlim(x_min,x_max)
         ax.set_ylim(y_min,y_max)
         ax.set_zlim(z_min,z_max)
