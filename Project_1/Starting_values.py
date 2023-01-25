@@ -42,20 +42,41 @@ print(len(W[0]))
 
 
 
-def Der_W(W,t):
-
-    #make a 4x6 matrix of zeros
-    W_derivat=np.zeros((len(W),len(W[0])))
-    for i in range(3):
-        W_derivat[:,i]=W[:,i+3]
-
-    #for x, y and z
-    for ii in [0,1,2]:
-        r=W[:,ii]
-        for position in range(len(r)):
-            len_vector_r=math.sqrt((r[position]-r[0])**2)
-            W_derivat[:,ii+3]=-G*masses[position]*r[position]/len_vector_r**3
+def Der_W(W, t):
+    x = W[:, 0]
+    y = W[:, 1]
+    z = W[:, 2]
+    vx = W[:, 3]
+    vy = W[:, 4]
+    vz = W[:, 5]
+    
+    # Repeat the positions and masses for each object
+    x_repeated = np.repeat(x, len(x)).reshape(len(x), len(x))
+    y_repeated = np.repeat(y, len(y)).reshape(len(y), len(y))
+    z_repeated = np.repeat(z, len(z)).reshape(len(z), len(z))
+    masses_repeated = np.repeat(masses, len(masses)).reshape(len(masses), len(masses))
+    
+    # Calculate the distance between each pair of objects
+    dx = x_repeated - x_repeated.T
+    dy = y_repeated - y_repeated.T
+    dz = z_repeated - z_repeated.T
+    r = np.sqrt(dx**2 + dy**2 + dz**2)
+    
+    # Set the diagonal to infinity so that the force is not calculated for an object on itself
+    np.fill_diagonal(r, np.inf)
+    
+    # Calculate the force on each object
+    f = G * masses_repeated * masses_repeated.T / r**2
+    
+    # Sum the force on each object in each direction
+    fx = np.sum(f * dx / r, axis=1)
+    fy = np.sum(f * dy / r, axis=1)
+    fz = np.sum(f * dz / r, axis=1)
+    
+    # Assemble the derivatives
+    W_derivat = np.array([vx, vy, vz, fx, fy, fz]).T
     return W_derivat
+
 
 #for making a 4th order Runge-Kutta
 def RK4(W,t,h,Der_W):
@@ -77,6 +98,34 @@ for i, t in enumerate(tqdm.tqdm(np.arange(t, t_end, h))):
 
 
 
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
+
+# Set up the figure and axes for the animation
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+# Initialize the scatter plot objects for the bodies
+scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=100) for i in range(4)]
+
+# Function to update the animation at each time step
+def update(num):
+    for i, scatter in enumerate(scatters):
+        scatter.set_offsets(result[num,:,:3])
+        scatter.set_3d_properties(result[num, i, 2])
+
+# Create the animation using the update function and the number of frames
+ani = FuncAnimation(fig, update, frames=range(0, result.shape[0], 10), repeat=True)
+
+# Display the animation
+plt.show()
+
+
+
+"""
 import matplotlib.animation as animation
 
 # Set up the figure and axes for the animation
@@ -86,7 +135,7 @@ fig, ax = plt.subplots()
 # Initialize the scatter plot objects for the bodies and add labels
 
 #rewrite results to only keep every 10th value
-result=result[::10]
+result=result[::100]
 
 
 
@@ -144,13 +193,17 @@ def animate(i):
 
 
 # Create the animation with PillowWriter
-ani = animation.FuncAnimation(fig, animate, frames=result.shape[0], init_func=init, blit=True, interval=1)
+ani = animation.FuncAnimation(fig, animate, frames=result.shape[0], init_func=init, blit=True, interval=10, repeat=False)
 
 
 
 # Save the animation
 from matplotlib.animation import PillowWriter
-ani.save('Computational-Astrophysics/Project_1/Starting_values.gif', writer=PillowWriter(fps=30))
+
+#as an mp4
+#ani.save('Computational-Astrophysics/Project_1/Starting_values.webm', writer = 'webm')
+ani.save("animation.mkv", writer = 'mencoder')
+
 
 
 
@@ -158,3 +211,5 @@ ani.save('Computational-Astrophysics/Project_1/Starting_values.gif', writer=Pill
 
 #plt.show()
 print("Done")
+
+#"""
