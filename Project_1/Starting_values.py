@@ -85,7 +85,6 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 
-"""
 # Set up the figure and axes for the animation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -160,7 +159,7 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 # Display the animation
 plt.show()
 plt.close()
-"""
+
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
