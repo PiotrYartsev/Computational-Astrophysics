@@ -7,7 +7,7 @@ np.set_printoptions(precision=3)
 from jplephem.spk import SPK
 
 # get planetary ephemeris
-eph = SPK.open('/home/piotr/Documents/GitHub/Computational-Astrophysics/Project_1/de102.bsp')
+eph = SPK.open('Project_1\de102.bsp')
 
 print(eph)
 #get the name of the planets at position 0,4
