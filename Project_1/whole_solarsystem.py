@@ -2,24 +2,87 @@ import tqdm as tqdm
 import math as math
 import matplotlib.pyplot as plt
 import numpy as np
-np.set_printoptions(precision=3)
 
+import jplephem as jpl 
 from jplephem.spk import SPK
 
-# get planetary ephemeris
+
+
+# get the ephemeris file today
 eph = SPK.open('Project_1\de102.bsp')
 
 print(eph)
-#get the name of the planets at position 0,4
-print(eph[0,4].target)
 
-positions = eph[0,4].compute(2457061.5)
+names=["Mercury","Venus","Earth","Mars","Jupiter","Saturn","Uranus","Neptune","Pluto","Sun"]
+positions=[1,2,3,4,5,6,7,8,9,10]
 
-velocity = eph[0,4].compute_and_differentiate(2457061.5)
-print("\n")
-print(positions)
-print("\n")
-print(velocity)
+masses = []
+x = []
+y = []
+z = []
+v_x = []
+v_y = []
+v_z = []
+
+for i in range(10):
+    pos, vel = eph[0,positions[i]].compute_and_differentiate(2817872.5)
+    x.append(pos[0]/149597870.7)
+    y.append(pos[1]/149597870.7)
+    z.append(pos[2]/149597870.7)
+    v_x.append(vel[0]/149597870.7*365.25)
+    v_y.append(vel[1]/149597870.7*365.25)
+    v_z.append(vel[2]/149597870.7*365.25)
+    masses.append(eph[0,positions[i]].mass)
+
+
+
+# make a matrix of the starting values
+W=np.array([[x[0],y[0],z[0],v_x[0],v_y[0],v_z[0]],[x[1],y[1],z[1],v_x[1],v_y[1],v_z[1]],[x[2],y[2],z[2],v_x[2],v_y[2],v_z[2]], ...])
+
+print(W)
+
+"""
+#get the name of the planets
+
+eph[0,3].body_name_to_id
+
+
+#get earth position
+eartg_pos=eph[0,3].compute_and_differentiate(2817872.5)[0]
+
+#get the name of the planet
+
+
+#convert to AU from km
+eartg_pos=eartg_pos/149597870.7
+print(eartg_pos)
+
+#get earth velocity
+sun_vel=eph[0,3].compute_and_differentiate(2817872.5)[1]
+
+#convert to AU/year
+
+sun_vel=sun_vel/149597870.7
+
+sun_vel=sun_vel*365.25
+
+
+
+print(sun_vel)
+
+
+
+
+
+
+
+#vauy=vauy.value
+
+
+
+
+
+#"""
 
 """
 #get gravitational constant
