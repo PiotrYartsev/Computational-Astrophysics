@@ -36,27 +36,33 @@ print(W)
 
 
 
-
+energy_list=[]
 
 
 def Der_W(W, t):
-    #initialize the derivative matrix
-    W_derivat=np.zeros((len(W),len(W[0])))
-    #iterate over the planets
-    W_derivat=np.zeros((len(W),len(W[0])))
-    for i in range(3):
-        W_derivat[:,i]=W[:,i+3]
-        
-    for i in range(4):
-        for j in range(4):
-            if i!=j:
-                r=math.sqrt((W[i,0]-W[j,0])**2+(W[i,1]-W[j,1])**2+(W[i,2]-W[j,2])**2)
-                W_derivat[i,3]+=G*masses[j]*(W[j,0]-W[i,0])/r**3
-                W_derivat[i,4]+=G*masses[j]*(W[j,1]-W[i,1])/r**3
-                W_derivat[i,5]+=G*masses[j]*(W[j,2]-W[i,2])/r**3
-        
+   #initialize the derivative matrix
+   W_derivat=np.zeros((len(W),len(W[0])))
+   #iterate over the planets
+   W_derivat=np.zeros((len(W),len(W[0])))
+   for i in range(3):
+       W_derivat[:,i]=W[:,i+3]
+   
 
-    return W_derivat
+   E=0
+   for i in range(len(x)):
+        E += masses[i]*(W[i,3]**2 + W[i,4]**2 + W[i,5]**2)/2    
+        for j in range(len(x)):
+            if i!=j:
+               r=math.sqrt((W[i,0]-W[j,0])**2+(W[i,1]-W[j,1])**2+(W[i,2]-W[j,2])**2)
+               E -= G*masses[i]*masses[j]/r
+               W_derivat[i,3]+=G*masses[j]*(W[j,0]-W[i,0])/r**3
+               W_derivat[i,4]+=G*masses[j]*(W[j,1]-W[i,1])/r**3
+               W_derivat[i,5]+=G*masses[j]*(W[j,2]-W[i,2])/r**3
+      
+
+   energy_list.append(E)
+   return W_derivat
+
 
 
 #for making a 4th order Runge-Kutta
@@ -173,3 +179,17 @@ ax.set_title('Path of planets in the solar system')
 
 plt.savefig('solar_system.png')
 plt.show()
+
+
+#import linspace to make a list of time values
+from numpy import linspace
+time=linspace(0,300,len(energy_list))
+mng = plt.get_current_fig_manager()
+mng.resize(*mng.window.maxsize())
+plt.plot(time,energy_list)
+plt.xlabel('time [years]')
+plt.ylabel('total energy [J]')
+plt.title('Total energy of the solar system')
+plt.savefig('total_energy.png')
+plt.show()
+

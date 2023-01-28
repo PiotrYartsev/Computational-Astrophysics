@@ -313,7 +313,8 @@ plt.show()
 #import linspace to make a list of time values
 from numpy import linspace
 time=linspace(0,300,len(energy_list))
-
+mng = plt.get_current_fig_manager()
+mng.resize(*mng.window.maxsize())
 plt.plot(time,energy_list)
 plt.xlabel('time [years]')
 plt.ylabel('total energy [J]')
