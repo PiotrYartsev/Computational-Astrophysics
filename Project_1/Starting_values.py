@@ -160,9 +160,6 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 plt.show()
 plt.close()
 
-
-
-
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 

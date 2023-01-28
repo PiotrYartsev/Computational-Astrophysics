@@ -1,4 +1,4 @@
-import tqdm as tqdm
+from tqdm.notebook import tqdm
 import math as math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,52 +72,64 @@ for i in range(len(x)):
 print(W)
 energy_list = []
 
+def Der_W(t,W):
 
-def Der_W(W, t):
-   #initialize the derivative matrix
-   W_derivat=np.zeros((len(W),len(W[0])))
-   #iterate over the planets
-   W_derivat=np.zeros((len(W),len(W[0])))
-   for i in range(3):
-       W_derivat[:,i]=W[:,i+3]
-   
+    W_derivat=np.zeros(len(W))
 
-   E=0
-   for i in range(len(x)):
-        E += masses[i]*(W[i,3]**2 + W[i,4]**2 + W[i,5]**2)/2    
-        for j in range(len(x)):
+    for i in range(int(len(W)/6)):
+        W_derivat[i*6]=W[i*6+3]
+        W_derivat[i*6+1]=W[i*6+4]
+        W_derivat[i*6+2]=W[i*6+5]
+        W_derivat[i*6+3]=0
+        W_derivat[i*6+4]=0
+        W_derivat[i*6+5]=0
+
+    kinetic_energy = 0
+    potential_energy = 0
+
+    for i in range(int(len(W)/6)):
+        kinetic_energy += 0.5*masses[i]*(W[i*6+3]**2+W[i*6+4]**2+W[i*6+5]**2)
+        for j in range(int(len(W)/6)):
             if i!=j:
-               r=math.sqrt((W[i,0]-W[j,0])**2+(W[i,1]-W[j,1])**2+(W[i,2]-W[j,2])**2)
-               E -= G*masses[i]*masses[j]/r
-               W_derivat[i,3]+=G*masses[j]*(W[j,0]-W[i,0])/r**3
-               W_derivat[i,4]+=G*masses[j]*(W[j,1]-W[i,1])/r**3
-               W_derivat[i,5]+=G*masses[j]*(W[j,2]-W[i,2])/r**3
-      
+                r=math.sqrt((W[i*6]-W[j*6])**2+(W[i*6+1]-W[j*6+1])**2+(W[i*6+2]-W[j*6+2])**2)
+                potential_energy += -G*masses[i]*masses[j]/r
+                W_derivat[i*6+3]+=G*masses[j]*(W[j*6]-W[i*6])/r**3
+                W_derivat[i*6+4]+=G*masses[j]*(W[j*6+1]-W[i*6+1])/r**3
+                W_derivat[i*6+5]+=G*masses[j]*(W[j*6+2]-W[i*6+2])/r**3
+    
+    total_energy = kinetic_energy + potential_energy
+    energy_list.append(total_energy)
 
-   energy_list.append(E)
-   return W_derivat
-
-
-
-
-#for making a 4th order Runge-Kutta
-def RK4(W,t,h,Der_W):
-   k1=h*Der_W(W,t)
-   k2=h*Der_W(W+0.5*k1,t+0.5*h)
-   k3=h*Der_W(W+0.5*k2,t+0.5*h)
-   k4=h*Der_W(W+k3,t+h)
-   W_next=W+(k1+2*k2+2*k3+k4)/6
-   return W_next
+    return W_derivat
 
 
-# To store the results
-result = np.zeros((int((t_end-t)/h)+1, len(W), len(W[0])))
+
+#import a function to calculate the Runge-Kutta method
+from scipy.integrate import RK45 as RK45
+
+W=W.reshape(-1)
 
 
-# Iterate over time steps using tqdm to display a progress bar
-for i, t in enumerate(tqdm.tqdm(np.arange(t, t_end, h))):
-   result[i] = W
-   W = RK4(W, t, h, Der_W)
+result = []
+
+# Initialize the RK45 integrator
+integrator = RK45(Der_W, t, W, t_end, h,atols=1e-20,rtols=1e-20)
+
+# Integrate the equations of motion
+pbar = tqdm(total=t_end) # set the total progress to the final time
+while integrator.t < t_end:
+    integrator.step()
+    pbar.update(integrator.step_size) # update the progress bar by the step size
+    final_state = integrator.y
+    final_state=final_state.reshape((len(x),6))
+    result.append(final_state)
+pbar.close()
+
+result=np.stack(result)
+
+#for each state of the system, reshape the array to the original shape 
+
+print(result)
 
 
 
@@ -266,7 +278,7 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 
 
-plt.savefig('whole_solar_system.png')
+plt.savefig('whole_solar_system_no_murc_integrator.png')
 plt.show()
 plt.close()
 
@@ -294,14 +306,8 @@ ax.set_title('Path of planets in the solar system')
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 
-plt.savefig('whole_solar_system_zoomedin.png')
+plt.savefig('whole_solar_system_no_murc_integrator_zoomedin.png')
 plt.show()
-
-
-
-
-
-
 
 
 #import linspace to make a list of time values
@@ -312,8 +318,19 @@ plt.plot(time,energy_list)
 plt.xlabel('time [years]')
 plt.ylabel('total energy [J]')
 plt.title('Total energy of the solar system')
-plt.savefig('total_energy.png')
+plt.savefig('total_energy_no_murc_integrator.png')
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
