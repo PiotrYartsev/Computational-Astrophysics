@@ -216,7 +216,7 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 
 # Save the animation
 writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
-ani.save('whole_solar_system.mp4',writer=writer)
+#ani.save('whole_solar_system.mp4',writer=writer)
 
 
 
@@ -329,7 +329,7 @@ mng.resize(*mng.window.maxsize())
 #make the figure tight so that the legend is not cut off
 plt.tight_layout()
 plt.savefig('whole_solar_system.png')
-plt.show()
+#plt.show()
 plt.close()
 
 
@@ -357,8 +357,8 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 plt.tight_layout()
 plt.savefig('whole_solar_system_zoomedin.png')
-plt.show()
-
+#plt.show()
+plt.close()
 
 
 
@@ -373,7 +373,7 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 plt.plot(time,energy_list)
 plt.xlabel('time [years]')
-plt.ylabel('total energy [J]')
+plt.ylabel('total energy ')
 plt.title('Total energy of the solar system')
 plt.savefig('total_energy_whole_system.png')
 plt.show()

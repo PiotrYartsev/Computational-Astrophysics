@@ -238,7 +238,7 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 
 # Save the animation as a mp4 file
 writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
-ani.save('solar_system_no_murc_integrator.mp4',writer=writer)
+#ani.save('solar_system_no_murc_integrator.mp4',writer=writer)
 
 
 # Display the animation
@@ -324,7 +324,7 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 plt.plot(time,energy_list)
 plt.xlabel('time [years]')
-plt.ylabel('total energy [J]')
+plt.ylabel('total energy')
 plt.title('Total energy of the solar system')
 plt.savefig('total_energy_no_murc_integrator.png')
 plt.show()

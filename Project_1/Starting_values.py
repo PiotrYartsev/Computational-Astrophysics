@@ -220,7 +220,7 @@ mng.resize(*mng.window.maxsize())
 #plot the points
 plt.plot(time,energy_list,'b*')
 plt.xlabel('time [years]')
-plt.ylabel('total energy [J]')
+plt.ylabel('total energy')
 plt.title('Total energy of the solar system')
 plt.savefig('total_energy.png')
 plt.show()
