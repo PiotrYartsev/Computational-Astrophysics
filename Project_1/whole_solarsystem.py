@@ -148,7 +148,7 @@ scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], 
 
 
 # only keep every 10th point to make the animation faster
-
+result = result[::10]
 
 # Function to update the animation at each time step
 
@@ -237,9 +237,9 @@ print("1")
 #plt.show()
 plt.close()
 
+"""
 
 
-#"""
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
