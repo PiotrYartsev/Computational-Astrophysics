@@ -16,7 +16,7 @@ Trojan2_mass=0
 
 masses=[Sun_mass,Jupiter_mass,Trojan1_mass,Trojan2_mass]
 names=["Sun","Jupiter","Trojan1","Trojan2"]
-
+colors=["yellow","green","red","blue"]
 x=[0,0,-4.503,4.503]
 y=[0, 5.2, 2.6, 2.6]
 z=[0,0,0,0]
@@ -104,7 +104,7 @@ ax = fig.add_subplot(111, projection='3d')
 # Initialize the scatter plot objects for the bodies and with labels
 
 
-scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=100) for i in range(4)]
+scatters = [ax.scatter([result[0, i, 0]], [result[0, i, 1]], [result[0, i, 2]], s=20) for i in range(4)]
 
 
 
@@ -153,8 +153,10 @@ def update(num):
 ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, blit=False)
 
 
-# Save the animation as a gif
-#ani.save('solar_system.gif', writer='imagemagick', fps=30)
+# Save the animation as a mp4
+writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
+#ani.save('solar_system.mp4',writer=writer)
+
 
 
 # Save the animation
@@ -163,30 +165,60 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 
 
 # Display the animation
-plt.show()
+#plt.show()
 plt.close()
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 for i in range(4):
-    ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5)
+    ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
+ax.legend()
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
 ax.set_title('Path of planets in the solar system')
+mng = plt.get_current_fig_manager()
+mng.resize(*mng.window.maxsize())
 
-
+plt.tight_layout()
 plt.savefig('solar_system.png')
-plt.show()
+#plt.show()
+plt.close()
 
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for i in range(4):
+    ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
+ax.legend()
+
+#limit the plot to the outer ring of planets from x=2 to x=4 and y=2 to y=4
+ax.set_xlim(2,4)
+ax.set_ylim(2,4)
+ax.set_zlim(-0.5,0.5)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+ax.set_title('Path of planets in the solar system')
+mng = plt.get_current_fig_manager()
+mng.resize(*mng.window.maxsize())
+
+plt.tight_layout()
+
+plt.savefig('solar_system_zoomedin.png')
+#plt.show()
+plt.close()
+
+
+#print(energy_list)
 
 #import linspace to make a list of time values
 from numpy import linspace
 time=linspace(0,300,len(energy_list))
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
-plt.plot(time,energy_list)
+#plot the points
+plt.plot(time,energy_list,'b*')
 plt.xlabel('time [years]')
 plt.ylabel('total energy [J]')
 plt.title('Total energy of the solar system')
