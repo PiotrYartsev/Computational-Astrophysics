@@ -214,12 +214,9 @@ def update(num):
 ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, blit=False)
 
 
-# Save the animation as a gif
-#ani.save('solar_system.gif', writer='imagemagick', fps=30)
-
-
 # Save the animation
-#ani.save('solar_system.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+ani.save('solar_system.mp4', fps=30)
+
 
 
 
