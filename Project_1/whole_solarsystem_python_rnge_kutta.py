@@ -71,7 +71,7 @@ for i in range(len(names)):
     else:
         mass = ("%.3g" %(masses[i]))
     print(names[i]+" & " +mass +" & "+  str(round((x[i]),2) )+ " & " + str(round((y[i]),2) )+ " & " + str(round((z[i]),2) )+ " & " + str(round((v_x[i]),2) )+ " & " + str(round((v_y[i]),2) )+ " & " + str(round((v_z[i]),2) )+ " \\\\" + "\\hline")
-"""
+
 
 W=np.zeros((len(x),6))
 
