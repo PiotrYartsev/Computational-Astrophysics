@@ -22,7 +22,10 @@ eph = SPK.open('Project_1/de102.bsp')
 names=["Mercury","Venus","Earth","Mars","Jupiter","Saturn","Uranus","Neptune","Pluto","Sun"]
 positions=[1,2,3,4,5,6,7,8,9,10]
 colors=["red","orange","blue","grey","green","purple","pink","brown","black","yellow"]
-masses = [0.16601e-6, 2.4478383e-6, 3.0404326e-6, 0.3227151e-6, 0.95479194e-3, 0.2858850e-3, 0.43e-3, 0.51e-3, 0.57e-3, 1.0]
+#planet and sun masses in kg
+masses = [3.3011e23,4.8675e24,5.97237e24,6.4171e23,1.8986e27,5.6834e26,8.6810e25,1.0243e26,1.309e22,1.989e30]
+masses=[x/masses[-1] for x in masses]
+
 x = []
 y = []
 z = []
@@ -60,7 +63,15 @@ v_x=v_x-v_x[9]
 v_y=v_y-v_y[9]
 v_z=v_z-v_z[9]
 
-
+for i in range(len(names)):
+    if names[i] == "Sun":
+        mass = str(1)
+    elif masses[i] <0:
+        mass = str(masses[i])
+    else:
+        mass = ("%.3g" %(masses[i]))
+    print(names[i]+" & " +mass +" & "+  str(round((x[i]),2) )+ " & " + str(round((y[i]),2) )+ " & " + str(round((z[i]),2) )+ " & " + str(round((v_x[i]),2) )+ " & " + str(round((v_y[i]),2) )+ " & " + str(round((v_z[i]),2) )+ " \\\\" + "\\hline")
+"""
 
 W=np.zeros((len(x),6))
 
@@ -253,7 +264,7 @@ plt.close()
 
 
 
-#"""
+
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
@@ -326,7 +337,7 @@ plt.show()
 
 
 
-
+#"""
 
 
 
