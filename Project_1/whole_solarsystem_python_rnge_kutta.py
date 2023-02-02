@@ -165,7 +165,7 @@ ax = fig.add_subplot(111, projection='3d')
 # Initialize the scatter plot objects for the bodies and with labels
 
 
-scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], s=100, facecolor="black",edgecolor='none')]
+scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], s=20, facecolor="black",edgecolor='none')]
 
 
 
@@ -237,8 +237,8 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, 
 
 
 # Save the animation as a mp4 file
-ani.save('solar_system_no_murc_integrator.mp4', fps=30)
-
+writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
+#ani.save('solar_system_no_murc_integrator.mp4',writer=writer)
 
 
 # Display the animation
@@ -269,7 +269,7 @@ for i in range(len(x)):
         pass
     else:
         #make the edgecolor transparent so that the color of the planet is the same as the color of the path with thin lines
-        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=10)
+        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
         #set their color and size
 
 
@@ -284,7 +284,7 @@ ax.set_title('Path of planets in the solar system')
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 
-
+plt.tight_layout()
 plt.savefig('whole_solar_system_no_murc_integrator.png')
 plt.show()
 plt.close()
@@ -300,7 +300,7 @@ for i in range(len(x)):
         pass
     else:
         #make the edgecolor transparent so that the color of the planet is the same as the color of the path with thin lines
-        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=10)
+        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
         #set their color and size
 
 
@@ -312,7 +312,7 @@ ax.set_zlabel('z')
 ax.set_title('Path of planets in the solar system')
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
-
+plt.tight_layout()
 plt.savefig('whole_solar_system_no_murc_integrator_zoomedin.png')
 plt.show()
 
@@ -324,7 +324,7 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 plt.plot(time,energy_list)
 plt.xlabel('time [years]')
-plt.ylabel('total energy [J]')
+plt.ylabel('total energy')
 plt.title('Total energy of the solar system')
 plt.savefig('total_energy_no_murc_integrator.png')
 plt.show()

@@ -146,7 +146,7 @@ ax = fig.add_subplot(111, projection='3d')
 # Initialize the scatter plot objects for the bodies and with labels
 
 
-scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], s=100, facecolor="black",edgecolor='none')]
+scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], s=20, facecolor="black",edgecolor='none')]
 
 
 
@@ -217,12 +217,13 @@ ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=1, b
 
 my_writer=animation.PillowWriter(fps=20, codec='libx264', bitrate=2)
 # Save the animation
-ani.save('solar_system.mp4', writer=my_writer)
+writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
+#ani.save('whole_solar_system.mp4',writer=writer)
 
 
 
 
-# Display the animation
+
 import time 
 
 time.sleep(1)
@@ -239,7 +240,69 @@ print("1")
 #plt.show()
 plt.close()
 
-"""
+#set their color and size
+
+x_max=40
+x_min=-40
+y_max=40
+y_min=-40
+z_max=16
+z_min=-16
+ax.set_xlim(x_min,x_max)
+ax.set_ylim(y_min,y_max)
+ax.set_zlim(z_min,z_max)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+
+
+def update(num):
+    for text in ax.texts:
+            text.remove()
+    
+
+    for i, scatter in enumerate(scatters):
+
+            
+        #scatter.set_data(result[num, i, 0], result[num, i, 1])
+        scatter.set_offsets(result[num,:,:2])
+        #scatter.set_color(colors[i])
+        scatter.set_3d_properties(result[num, i, 2],zdir='z')
+           
+
+
+        
+
+
+        # Adding the labels for the planet
+        
+        #ax.text(result[num, i, 0], result[num, i, 1], result[num, i, 2], names[i], color='black')
+    ax.set_title('Solar system {} years'.format(round(num*h*300/365,1)))
+
+#set the color of the planets in the plot
+
+#ax.legend(names,loc='upper left',bbox_to_anchor=(1,1),prop={'size': 10})
+    
+    
+        
+
+
+# Create the animation
+ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, blit=False)
+
+
+# Save the animation
+writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
+#ani.save('whole_solar_system_zoom.mp4',writer=writer)
+
+plt.close()
+
+
+
+# Display the animation
+
+
+
 
 
 fig = plt.figure()
@@ -250,7 +313,7 @@ for i in range(len(x)):
         pass
     else:
         #make the edgecolor transparent so that the color of the planet is the same as the color of the path with thin lines
-        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=10)
+        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
         #set their color and size
 
 
@@ -265,9 +328,10 @@ ax.set_title('Path of planets in the solar system')
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 
-
+#make the figure tight so that the legend is not cut off
+plt.tight_layout()
 plt.savefig('whole_solar_system.png')
-plt.show()
+#plt.show()
 plt.close()
 
 
@@ -281,7 +345,7 @@ for i in range(len(x)):
         pass
     else:
         #make the edgecolor transparent so that the color of the planet is the same as the color of the path with thin lines
-        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=10)
+        ax.scatter(result[:,i,0],result[:,i,1],result[:,i,2],alpha=0.5,facecolor=colors[i],edgecolor='none',label=names[i],s=2)
         #set their color and size
 
 
@@ -293,10 +357,10 @@ ax.set_zlabel('z')
 ax.set_title('Path of planets in the solar system')
 mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
-
+plt.tight_layout()
 plt.savefig('whole_solar_system_zoomedin.png')
-plt.show()
-
+#plt.show()
+plt.close()
 
 
 
@@ -311,7 +375,7 @@ mng = plt.get_current_fig_manager()
 mng.resize(*mng.window.maxsize())
 plt.plot(time,energy_list)
 plt.xlabel('time [years]')
-plt.ylabel('total energy [J]')
+plt.ylabel('total energy ')
 plt.title('Total energy of the solar system')
 plt.savefig('total_energy_whole_system.png')
 plt.show()
