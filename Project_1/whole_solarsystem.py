@@ -5,6 +5,14 @@ import numpy as np
 
 import jplephem as jpl 
 from jplephem.spk import SPK
+
+
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
+
 #get gravitational constant
 G=4*math.pi**2
 
@@ -124,11 +132,6 @@ for i, t in enumerate(tqdm.tqdm(np.arange(t, t_end, h))):
 
 
 
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.animation as animation
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.animation import FuncAnimation
 
 # Set up the figure and axes for the animation
 fig = plt.figure()
@@ -148,7 +151,6 @@ scatters = [ax.scatter([result[0, 1, 0]], [result[0, 1, 1]], [result[0, 1, 2]], 
 
 
 # only keep every 10th point to make the animation faster
-result = result[::10]
 
 # Function to update the animation at each time step
 
@@ -211,11 +213,11 @@ def update(num):
 
 
 # Create the animation
-ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=10, blit=False)
+ani = FuncAnimation(fig, update, frames=np.arange(0, len(result)), interval=1, blit=False)
 
-
+my_writer=animation.PillowWriter(fps=20, codec='libx264', bitrate=2)
 # Save the animation
-ani.save('solar_system.mp4', fps=30)
+ani.save('solar_system.mp4', writer=my_writer)
 
 
 
