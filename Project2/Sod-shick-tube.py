@@ -1,7 +1,7 @@
 from tqdm.notebook import tqdm
 import math as math
 import matplotlib.pyplot as plt
-
+import scipy as scipy
 import numpy as np
 
 import jplephem as jpl 
@@ -39,10 +39,25 @@ x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 #h= lambda m_i,p_i: 1.3*(m_i/p_i)**(1/d)
 d=1
-h=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[-4])**(1/d)
+h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
+h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
+h=(h_1+h_2)/2
+
+h_test=0.001875*5
+h=h_test
 a_d=1/h
 
 W=lambda R, a_d,h: a_d*(2/3-R**2+1/2*R**3) if R<=1 and R>=0 else a_d*(1/6*(2-R)**3) if R>1 and R<=2 else 0
+
+
+def W_derivat(R,a_d,h,dx):
+    r=R*h
+    if R<=1 and R>=0:
+        return a_d*(-2+3/2*R)*dx/h**2
+    elif R>1 and R<=2:
+        return a_d*(-1/2(2-R)**2)*dx/(h*r)
+    else:
+        return 0
 
 #position in x direction 0
 #position in y direction 1
@@ -56,30 +71,43 @@ W=lambda R, a_d,h: a_d*(2/3-R**2+1/2*R**3) if R<=1 and R>=0 else a_d*(1/6*(2-R)*
 #number of particles 9
 
 
-def G_function(State_vector):
+def G_function(State_vector,t=0):
 
     State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
 
+    x_1=State_vector[:,0]
+
+
+    
+    sumxx=x_1-x_1[:,np.newaxis]
+    #print(sumxx)
+
+    
+
+
     for i in range(len(State_vector)):
+        #get the absolute value of each element in the array
+        dx=(sumxx[i])
 
-        dx=abs(State_vector[:,0]-State_vector[:,0])
+        R=np.abs(dx)/h
 
-        R=dx/h
-        W_vect=np.vectorize(W)(R,a_d,h)
-        print(W_vect)
-        print(type(W_vect))
+        #make an array of the same size as R
+        W_vect=np.zeros(len(R))
+        for j in range(len(R)):
+            W_vect[j]=W(R[j],a_d,h)
 
-
-        print(State_vector[:,8])
-        print(type(State_vector[:,8]))
-        State_vector_dir[i][0]=State_vector[:,8]
-        break
-
+        State_vector_dir[i,3]=np.sum(np.multiply(W_vect,State_vector[:,8]))
+        
+        
+        W_delta_vect=np.zeros(len(R))
+        for j in range(len(R)):
+            W_delta_vect[j]=W_derivat(R[j],a_d,h,dx[j])
+        print(W_delta_vect)
 
     return State_vector_dir
     
 
-print(G_function(State_vector))
+print((G_function(State_vector))[0])
 
 """
 W=np.zeros((len(x),6))
