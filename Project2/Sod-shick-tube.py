@@ -107,7 +107,7 @@ def G_function(State_vector,t=0):
     return State_vector_dir
     
 
-print((G_function(State_vector))[0])
+print(G_function(State_vector)[0])
 
 """
 W=np.zeros((len(x),6))
