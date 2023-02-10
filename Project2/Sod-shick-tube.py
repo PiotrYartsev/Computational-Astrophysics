@@ -45,14 +45,15 @@ h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**
 h=(h_1+h_2)/2
 
 #just use a defoult value
-h_test=0.001875*5
+h_test=0.001875*3
 h=h_test
 a_d=1/h
 
 #kernel functions
-def W(r,a_d,h):
-    R=np.abs(r)/h
-    if R<=1 and R>=0:
+def W(R,r,a_d,h):
+
+
+    if R<=1 and R>=0 or R==0:
         a_d*(2/3-R**2+1/2*R**3)
     elif R>1 and R<=2:
         a_d*(1/6*(2-R)**3)
@@ -60,9 +61,11 @@ def W(r,a_d,h):
         return 0
 
 #derivative of the kernel function
-def W_derivat(r,a_d,h,dx):
-    R=np.abs(r)/h
-    if R<=1 and R>=0:
+def W_derivat(R,r,a_d,h,dx):
+    
+    
+    
+    if R<=1 and R>=0 or R==0:
         return a_d*(-2+3/2*R)*dx/h**2
     elif R>1 and R<=2:
         return a_d*(-1/2(2-R)**2)*dx/(h*r)
@@ -86,7 +89,7 @@ def G_function(State_vector,t=0):
     print(np.shape(State_vector))
     #create an empty derivative of the state vector
     State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
-    
+    State_vector_2=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
     
 
     new_pressure=np.zeros(len(x))
@@ -105,18 +108,14 @@ def G_function(State_vector,t=0):
     r=np.sqrt(r_sign**2)
     #print(r)
 
-
+    R=r/h
+    #print(R)
     W_func=np.vectorize(W)
     Delta_W_func=np.vectorize(W_derivat)
-    W_value=W_func(r,a_d,h)
-    Delta_W_value=Delta_W_func(r,a_d,h,r_sign)
+    W_value=np.zeros((len(x),len(x)))
+    Delta_W_value=np.zeros((len(x),len(x)))
     
-    print(W_value)
-    print(Delta_W_value)
-    for i in range(len(x)):
-        
-        pass
-        #define the derivative of pressure from the mass and velocity from the state vector
+
 
 
 
@@ -125,7 +124,7 @@ def G_function(State_vector,t=0):
     State_vector_dir[:,1]=State_vector[:,5]
     State_vector_dir[:,2]=State_vector[:,6]
     
-    return State_vector_dir
+    return State_vector_dir,State_vector_2
     
 
 print(G_function(State_vector)[0])
