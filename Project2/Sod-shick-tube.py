@@ -11,7 +11,7 @@ from jplephem.spk import SPK
 
 #set the initial conditions
 
-# pressure, velocity, eneergy, distance between particles, mass of particles, number of particles
+# density, velocity, pressure, eneergy, distance between particles, mass of particles, number of particles
 initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5,1,0.001875,0.001875,320]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795,0.1795,0.0075,0.001875,80]
 
@@ -79,13 +79,15 @@ def W_derivat(R,r,a_d,h,dx):
 #position in x direction 0
 #position in y direction 1
 #position in z direction 2
-#pressure 3 
+#density 3 
 #velocity in x direction 4
 #velocity in y direction 5
 #velocity in z direction 6
 #energy 7
-#mass 8
-#number of particles 9
+# pressure 8
+#Distance between particles 9
+#mass of particles 10
+#number of particles 11
 
 
 def G_function(State_vector,t=0):
@@ -126,9 +128,9 @@ def G_function(State_vector,t=0):
             
             W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
             Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
+    #set the dirivative of density as a fnction of mass, current dentsity, current pressure and delta_w
+    )
 
-
-    
 
     #set the derivate of futere position as the speed
     State_vector_dir[:,0]=State_vector[:,4]
