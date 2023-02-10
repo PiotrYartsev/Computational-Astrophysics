@@ -45,32 +45,36 @@ h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**
 h=(h_1+h_2)/2
 
 #just use a defoult value
-h_test=0.001875*3
+h_test=0.001875*5
 h=h_test
 a_d=1/h
 
+
+
 #kernel functions
 def W(R,r,a_d,h):
-
-
     if R<=1 and R>=0 or R==0:
-        a_d*(2/3-R**2+1/2*R**3)
+        output=a_d*(2/3-R**2+1/2*R**3)
     elif R>1 and R<=2:
-        a_d*(1/6*(2-R)**3)
+        output=a_d*(1/6*(2-R)**3)
     else:
-        return 0
+        output=0
+    return output
+
+
+
 
 #derivative of the kernel function
 def W_derivat(R,r,a_d,h,dx):
-    
-    
-    
     if R<=1 and R>=0 or R==0:
-        return a_d*(-2+3/2*R)*dx/h**2
+        output=a_d*(-2+3/2*R)*dx/h**2
     elif R>1 and R<=2:
-        return a_d*(-1/2(2-R)**2)*dx/(h*r)
+        output=a_d*(-(1/2)*(2-R)**2)*dx/(h*r)
     else:
-        return 0
+        output=0
+    return output
+
+
 
 #position in x direction 0
 #position in y direction 1
@@ -110,10 +114,21 @@ def G_function(State_vector,t=0):
 
     R=r/h
     #print(R)
-    W_func=np.vectorize(W)
-    Delta_W_func=np.vectorize(W_derivat)
+
     W_value=np.zeros((len(x),len(x)))
+
     Delta_W_value=np.zeros((len(x),len(x)))
+    for i in range(len(x)):
+        for j in range(len(x)):
+            R[i,j]=float(R[i,j])
+            r[i,j]=float(r[i,j])
+            r_sign[i,j]=float(r_sign[i,j])
+            
+            W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
+            Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
+
+    print(W_value)
+    print(Delta_W_value)
     
 
 
@@ -124,7 +139,7 @@ def G_function(State_vector,t=0):
     State_vector_dir[:,1]=State_vector[:,5]
     State_vector_dir[:,2]=State_vector[:,6]
     
-    return State_vector_dir,State_vector_2
+    return State_vector_dir
     
 
 print(G_function(State_vector)[0])
