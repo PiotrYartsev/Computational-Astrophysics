@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import scipy as scipy
 import numpy as np
 
+
 import jplephem as jpl 
 from jplephem.spk import SPK
 #get gravitational constant
@@ -76,37 +77,32 @@ def W_derivat(R,a_d,h,dx):
 
 def G_function(State_vector,t=0):
 
+    print(np.shape(State_vector))
     #create an empty derivative of the state vector
     State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
+    
+    Delta_W=np.zeros((len(x),len(x)))
+    Delta_W_dir=np.zeros((len(x),len(x)))
 
-    #
+    new_pressure=np.zeros(len(x))
+    new_velocity=np.zeros(len(x))
+    new_energy=np.zeros(len(x))
+    new_position=np.zeros(len(x))
     x_1=State_vector[:,0]
-
-
-    
     sumxx=x_1-x_1[:,np.newaxis]
-
-    
-
-
-    for i in range(len(State_vector)):
-        #get the absolute value of each element in the array
+    for i in range(len(x)):
         dx=(sumxx[i])
-
         R=np.abs(dx)/h
-
-        #make an array of the same size as R
-        W_vect=np.zeros(len(R))
-        for j in range(len(R)):
-            W_vect[j]=W(R[j],a_d,h)
-
-        State_vector_dir[i,3]=np.sum(np.multiply(W_vect,State_vector[:,8]))
         
-        
-        W_delta_vect=np.zeros(len(R))
-        for j in range(len(R)):
-            W_delta_vect[j]=W_derivat(R[j],a_d,h,dx[j])
+        #define the derivative of pressure from the mass and velocity from the state vector
 
+
+
+    #set the derivate of futere position as the speed
+    State_vector_dir[:,0]=State_vector[:,4]
+    State_vector_dir[:,1]=State_vector[:,5]
+    State_vector_dir[:,2]=State_vector[:,6]
+    
     return State_vector_dir
     
 
