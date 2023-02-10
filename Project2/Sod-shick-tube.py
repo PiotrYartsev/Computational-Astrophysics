@@ -45,7 +45,7 @@ h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**
 h=(h_1+h_2)/2
 
 #just use a defoult value
-h_test=0.001875*5
+h_test=0.001875*20
 h=h_test
 a_d=1/h
 
@@ -127,12 +127,8 @@ def G_function(State_vector,t=0):
             W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
             Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
 
-    print(W_value)
-    print(Delta_W_value)
+
     
-
-
-
 
     #set the derivate of futere position as the speed
     State_vector_dir[:,0]=State_vector[:,4]
