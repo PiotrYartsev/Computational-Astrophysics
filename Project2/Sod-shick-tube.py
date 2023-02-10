@@ -8,24 +8,24 @@ import jplephem as jpl
 from jplephem.spk import SPK
 #get gravitational constant
 
-
+#set the initial conditions
 
 # pressure, velocity, eneergy, distance between particles, mass of particles, number of particles
 initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5,1,0.001875,0.001875,320]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795,0.1795,0.0075,0.001875,80]
 
 
-
+#Populate the x axis
 x_less_than_o=np.linspace(0+0.0075,6,320)
 x_greater_than_0=np.linspace(0,-6+0.001875,80)
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
-#print(x)
 
+#create an empty state vector
 State_vector=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
 
 
 
-
+#populate the state vector
 for i in range(len(x)):
     if x[i]<=0:
         State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0[:-1]
@@ -33,23 +33,26 @@ for i in range(len(x)):
         State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_greater_0[:-1]
 
 
-#print(State_vector)
+#position in x direction 0
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 
-#h= lambda m_i,p_i: 1.3*(m_i/p_i)**(1/d)
+#define the smoothing length
 d=1
 h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
 h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
 h=(h_1+h_2)/2
 
+#just use a defoult value
 h_test=0.001875*5
 h=h_test
 a_d=1/h
 
+#kernel functions
 W=lambda R, a_d,h: a_d*(2/3-R**2+1/2*R**3) if R<=1 and R>=0 else a_d*(1/6*(2-R)**3) if R>1 and R<=2 else 0
 
 
+#derivative of the kernel function
 def W_derivat(R,a_d,h,dx):
     r=R*h
     if R<=1 and R>=0:
@@ -73,14 +76,15 @@ def W_derivat(R,a_d,h,dx):
 
 def G_function(State_vector,t=0):
 
+    #create an empty derivative of the state vector
     State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
 
+    #
     x_1=State_vector[:,0]
 
 
     
     sumxx=x_1-x_1[:,np.newaxis]
-    #print(sumxx)
 
     
 
@@ -102,7 +106,6 @@ def G_function(State_vector,t=0):
         W_delta_vect=np.zeros(len(R))
         for j in range(len(R)):
             W_delta_vect[j]=W_derivat(R[j],a_d,h,dx[j])
-        print(W_delta_vect)
 
     return State_vector_dir
     
