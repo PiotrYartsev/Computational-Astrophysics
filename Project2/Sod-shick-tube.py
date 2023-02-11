@@ -5,9 +5,6 @@ import scipy as scipy
 import numpy as np
 
 
-import jplephem as jpl 
-from jplephem.spk import SPK
-#get gravitational constant
 
 #set the initial conditions
 
@@ -75,8 +72,14 @@ def W_derivat(R,r,a_d,h,dx):
         output=0
     return output
 
+def density_function(mass,velocity_i, velocity_j, delta_W_ij):
+    return mass*(velocity_i-velocity_j)*delta_W_ij
 
+def velocity_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i, density_j, artvisc, delta_W_ij):
+    return -mass*(pressure_i/(density_i**2)+pressure_j/(density_j**2)+artvisc)*delta_W_ij
 
+def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i, density_j, artvisc, delta_W_ij):
+    return -1/2 * mass*(velocity_i*pressure_i/(density_i**2)+velocity_j*pressure_j/(density_j**2)+artvisc*velocity_i)*delta_W_ij
 #position in x direction 0
 #position in y direction 1
 #position in z direction 2
@@ -90,13 +93,35 @@ def W_derivat(R,r,a_d,h,dx):
 def G_function(State_vector,t=0):
 
     print(np.shape(State_vector))
+
+    x=State_vector[:,0]
+    y=State_vector[:,1]
+    z=State_vector[:,2]
+    density=State_vector[:,3]
+    velocity_x=State_vector[:,4]
+    velocity_y=State_vector[:,5]
+    velocity_z=State_vector[:,6]
+    energy=State_vector[:,7]
+
+
+
     #create an empty derivative of the state vector
     State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
 
+    der_x=State_vector_dir[:,0]
+    der_y=State_vector_dir[:,1]
+    der_z=State_vector_dir[:,2]
+    der_density=State_vector_dir[:,3]
+    der_velocity_x=State_vector_dir[:,4]
+    der_velocity_y=State_vector_dir[:,5]
+    der_velocity_z=State_vector_dir[:,6]
+    der_energy=State_vector_dir[:,7]
+    
+
     #define the x vector and calcualte the W_ij and delta W_ij
-    x_1=State_vector[:,0]
+
     #r-vector with sign
-    r_sign=x_1-x_1[:,np.newaxis]
+    r_sign=x-x[:,np.newaxis]
 
     
     
@@ -126,27 +151,29 @@ def G_function(State_vector,t=0):
         State_vector[i,3]=sum(W_value[i,:]*mass_of_particle)
 
     #set the derivate of futere position as the speed
-    State_vector_dir[:,0]=State_vector[:,4]
-    State_vector_dir[:,1]=State_vector[:,5]
-    State_vector_dir[:,2]=State_vector[:,6]
-    
+    der_x=velocity_x
+    der_y=velocity_y
+    der_z=velocity_z
+
     #set the derivative of the energy
     #c=math.sqrt((1.4-1)*State_vector[:,7])
+    gamma=1.4
     pressure=np.zeros(len(x))
-    pressure=(1.4-1)*State_vector[:,3]*State_vector[:,7]
-    #print(pressure)
-    for i in range(len(State_vector_dir)):
-        pressure_i=np.zeros(len(x))
-        pressure_i=pressure[i]*np.ones(len(x))
+    pressure=(gamma-1)*density*energy
+    seed_of_sound=np.zeros(len(x))
+    seed_of_sound=np.sqrt((gamma-1)*energy)
 
 
-        velocity_i=State_vector[i][4]*np.ones(len(x))
-        dencity_i=np.zeros(len(x))
-        dencity_i=State_vector[i,3]*np.ones(len(x))
+    State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
 
-        State_vector_dir[i][7]=1/2*mass_of_particle*sum((pressure_i/dencity_i**2+pressure/State_vector[:,3]**2)*(velocity_i-State_vector[:,4])*Delta_W_value[i,:])
-       
-
+    State_vector_dir[:,0]=der_x
+    State_vector_dir[:,1]=der_y
+    State_vector_dir[:,2]=der_z
+    State_vector_dir[:,3]=der_density
+    State_vector_dir[:,4]=der_velocity_x
+    State_vector_dir[:,5]=der_velocity_y
+    State_vector_dir[:,6]=der_velocity_z
+    State_vector_dir[:,7]=der_energy
 
 
     return State_vector_dir
