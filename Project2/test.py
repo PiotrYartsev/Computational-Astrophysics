@@ -36,21 +36,22 @@ for i in range(len(x_list)):
 #position in x direction 0
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
-
+"""
 #define the smoothing length
 d=1
 h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
 h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
 h=(h_1+h_2)/2
-
+"""
 #just use a defoult value
-h_test=0.001875*20
-h=h_test
+h=0.001875*20
+
 a_d=1/h
 
 
 
 #kernel functions
+"""
 def W(R,r,a_d,h):
     if R<=1 and R>=0 or R==0:
         output=a_d*(2/3-R**2+1/2*R**3)
@@ -59,11 +60,20 @@ def W(R,r,a_d,h):
     else:
         output=0
     return output
+"""
+def W(R, r, a_d, h):
+    output = np.zeros_like(R)
+    mask1 = (R >= 0) & (R <= 1)
+    mask2 = (R > 1) & (R <= 2)
+    output[mask1] = a_d * (2/3 - R[mask1]**2 + 1/2 * R[mask1]**3)
+    output[mask2] = a_d * (1/6 * (2-R[mask2])**3)
+    return output
 
 
 
 
 #derivative of the kernel function
+"""
 def W_derivat(R,r,a_d,h,dx):
     if R<=1 and R>=0 or R==0:
         output=a_d*(-2+3/2*R)*dx/h**2
@@ -71,6 +81,16 @@ def W_derivat(R,r,a_d,h,dx):
         output=a_d*(-(1/2)*(2-R)**2)*dx/(h*r)
     else:
         output=0
+    return output
+"""
+def W_derivat(R, r, a_d, h, dx):
+    mask1 = (R <= 1) & (R >= 0) | (R == 0)
+    mask2 = (R > 1) & (R <= 2)
+    
+    output = np.zeros_like(R)
+    output[mask1] = a_d * (-2 + 3/2 * R[mask1]) * dx[mask1] / h**2
+    output[mask2] = a_d * (-(1/2) * (2 - R[mask2])**2) * dx[mask2] / (h * r[mask2])
+    
     return output
 
 def density_function(mass,velocity_i, velocity_j, delta_W_ij):
@@ -89,10 +109,109 @@ def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i,
 #velocity in y direction 5
 #velocity in z direction 6
 #energy 7
+import time as time
+
+def G_function(t, State_vector):
+    State_vector = State_vector.reshape((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
+
+    State_vector_dir = np.zeros((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
+
+    r_sign = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
+    r = np.sqrt(r_sign**2)
+    R = r/h
+
+    W_value = np.zeros((len(x), len(x)))
+    Delta_W_value = np.zeros((len(x), len(x)))
+
+    W_value = W(R, r, a_d, h)
+    Delta_W_value = W_derivat(R, r, a_d, h, r_sign)
+
+    W_value[np.eye(len(x), dtype=bool)] = 0
+    Delta_W_value[np.eye(len(x), dtype=bool)] = 0
+
+    State_vector_dir[:, 0] = State_vector[:, 4]
+    State_vector_dir[:, 1] = State_vector[:, 5]
+    State_vector_dir[:, 2] = State_vector[:, 6]
+
+    gamma = 1.4
+    pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
+
+    temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
+    temp2 = (State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value
+
+    State_vector_dir[:, 7] = 1/2 * np.sum(mass_of_particle * (temp1 * temp2), axis=1)
+    State_vector_dir[:, 4] = -np.sum(mass_of_particle * (temp1 * Delta_W_value), axis=1)
+    State_vector_dir[:, 3] = np.sum(mass_of_particle * ((State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value), axis=1)
+
+    return State_vector_dir.reshape(-1)
 
 
-def G_function(State_vector,t=0):
-    State_vector_derivat=np.zeros(len(State_vector))
-    for i in range(8):
-        State_vector_derivat[i*8]=State_vector[i*8+4]
 
+
+#solve the differential equation using runge kutta
+
+#import a function to calculate the Runge-Kutta method
+from scipy.integrate import RK45 as RK45
+
+#flatten the state vector
+
+
+State_vector=State_vector.reshape(-1)
+#run it once to see if it works
+print(G_function(0,State_vector))
+
+
+result = []
+t=0
+t_end=40
+h=0.005
+# Initialize the RK45 integrator
+integrator = RK45(G_function, t, State_vector, t_end, h,atols=1e-10,rtols=1e-10)
+
+# Integrate the equations of motion
+# set the total progress to be t_end/h
+#prevent the progress bar to be reprinted and update the progress bar
+from tqdm.auto import tqdm
+with tqdm(total=int(t_end/h)) as pbar:
+    while integrator.t < t_end:
+        integrator.step()
+        pbar.update()
+        final_state = integrator.y
+        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
+        result.append(final_state)
+
+"""
+from tqdm.auto import tqdm
+with tqdm(total=int(t_end/h)) as pbar:
+    while integrator.t < t_end:
+        integrator.step()
+        pbar.update()
+        final_state = integrator.y
+        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
+        result.append(final_state)
+#pbar.close()
+"""
+
+result=np.stack(result)
+
+#for each state of the system, reshape the array to the original shape 
+
+print(result)
+#save result to a txt file
+file=open("result.txt","w")
+for i in range(len(result)):
+    file.write(str(result[i]))
+    file.write("\n")
+file.close()
+
+
+
+for i in range(len(result)):
+    #plot density vs x
+    plt.plot(x,result[i,:,3])
+    plt.xlabel("x")
+    plt.ylabel("density")
+    plt.title("density vs x")
+    plt.show()
+    

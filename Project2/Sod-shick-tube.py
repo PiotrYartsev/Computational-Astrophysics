@@ -19,6 +19,8 @@ visc=0
 x_less_than_o=np.linspace(0+0.0075,6,320)
 x_greater_than_0=np.linspace(0,-6+0.001875,80)
 x_list=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+#order the x_list
+x_list=np.sort(x_list)
 
 #create an empty state vector
 State_vector=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
@@ -35,6 +37,7 @@ for i in range(len(x_list)):
 
 #position in x direction 0
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+#order 
 
 """
 #define the smoothing length
@@ -111,104 +114,41 @@ def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i,
 #energy 7
 import time as time
 
-def G_function(t,State_vector):
+def G_function(t, State_vector):
+    State_vector = State_vector.reshape((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
 
-    #reshape the state vector and define the variables
-    State_vector=State_vector.reshape((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
+    State_vector_dir = np.zeros((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
 
-    x=State_vector[:,0]
-    y=State_vector[:,1]
-    z=State_vector[:,2]
-    density=State_vector[:,3]
+    r_sign = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
+    r = np.sqrt(r_sign**2)
+    R = r/h
 
-    velocity_x=State_vector[:,4]
-    velocity_y=State_vector[:,5]
-    velocity_z=State_vector[:,6]
-    energy=State_vector[:,7]
-    #print(State_vector)
+    W_value = np.zeros((len(x), len(x)))
+    Delta_W_value = np.zeros((len(x), len(x)))
 
-    #create an empty derivative of the state vector 
-    State_vector_dir=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
-
-    der_x=State_vector_dir[:,0]
-    der_y=State_vector_dir[:,1]
-    der_z=State_vector_dir[:,2]
-    der_density=State_vector_dir[:,3]
-    der_velocity_x=State_vector_dir[:,4]
-    der_velocity_y=State_vector_dir[:,5]
-    der_velocity_z=State_vector_dir[:,6]
-    der_energy=State_vector_dir[:,7]
-    
-
-    #define the x vector and calcualte the W_ij and delta W_ij
-    #r-vector with sign
-    r_sign=x-x[:,np.newaxis]
-    
-    #r-vector without sign
-    r=np.sqrt(r_sign**2)
-    #print(r)
-
-    R=r/h
-    #print(R)
-
-    W_value=np.zeros((len(x),len(x)))
-
-    Delta_W_value=np.zeros((len(x),len(x)))
-    #set time 0
     W_value = W(R, r, a_d, h)
     Delta_W_value = W_derivat(R, r, a_d, h, r_sign)
 
-    # Use a boolean mask to set the diagonal elements to 0
     W_value[np.eye(len(x), dtype=bool)] = 0
     Delta_W_value[np.eye(len(x), dtype=bool)] = 0
-    """
-    for i in range(len(x)):
-        for j in range(len(x)):
-            if i==j:
-                W_value[i,j]=0
-                Delta_W_value[i,j]=0
-            else:
-                R[i,j]=float(R[i,j])
-                r[i,j]=float(r[i,j])
-                r_sign[i,j]=float(r_sign[i,j])
-                
-                W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
-                Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])"""
 
-    #set the derivate of futere position as the speed
-    der_x=velocity_x
-    der_y=velocity_y
-    der_z=velocity_z
+    State_vector_dir[:, 0] = State_vector[:, 4]
+    State_vector_dir[:, 1] = State_vector[:, 5]
+    State_vector_dir[:, 2] = State_vector[:, 6]
 
-    #set the derivative of the energy
-    gamma=1.4
-    pressure=np.zeros(len(x))
-    pressure=(gamma-1)*density*energy
-    seed_of_sound=np.zeros(len(x))
-    seed_of_sound=np.sqrt((gamma-1)*energy)
+    gamma = 1.4
+    pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
 
-    #print time 0
-    for i in range(len(x)):
-        #sheck if length of R is larger than 2
-        if len(R[i,:])>2:
-            pass
-        else:
-            der_energy[i]=1/2*(sum(mass_of_particle*((pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*(velocity_x[i]-velocity_x[:])*Delta_W_value[i,:])))
-            der_velocity_x[i]=-sum(mass_of_particle*(pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*Delta_W_value[i,:])
-            der_density[i]=sum(mass_of_particle*((velocity_x[i]-velocity_x[:])*Delta_W_value[i,:]))
-    #print the time it took to calculate the derivatives
-    #set the derivatives to the values
-    State_vector_dir[:,0]=der_x
-    State_vector_dir[:,1]=der_y
-    State_vector_dir[:,2]=der_z
-    State_vector_dir[:,3]=der_density
-    State_vector_dir[:,4]=der_velocity_x
-    State_vector_dir[:,5]=der_velocity_y
-    State_vector_dir[:,6]=der_velocity_z
-    State_vector_dir[:,7]=der_energy
+    temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
+    temp2 = (State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value
 
-    State_vector_dir=State_vector_dir.reshape(-1)
-    return State_vector_dir
+    State_vector_dir[:, 7] = 1/2 * np.sum(mass_of_particle * (temp1 * temp2), axis=1)
+    State_vector_dir[:, 4] = -np.sum(mass_of_particle * (temp1 * Delta_W_value), axis=1)
+    State_vector_dir[:, 3] = np.sum(mass_of_particle * ((State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value), axis=1)
+
+    return State_vector_dir.reshape(-1)
+
 
 
 
@@ -234,6 +174,17 @@ integrator = RK45(G_function, t, State_vector, t_end, h,atols=1e-10,rtols=1e-10)
 
 # Integrate the equations of motion
 # set the total progress to be t_end/h
+#prevent the progress bar to be reprinted and update the progress bar
+from tqdm.auto import tqdm
+with tqdm(total=int(t_end/h)) as pbar:
+    while integrator.t < t_end:
+        integrator.step()
+        pbar.update()
+        final_state = integrator.y
+        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
+        result.append(final_state)
+
+"""
 from tqdm.auto import tqdm
 with tqdm(total=int(t_end/h)) as pbar:
     while integrator.t < t_end:
@@ -243,12 +194,27 @@ with tqdm(total=int(t_end/h)) as pbar:
         final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
         result.append(final_state)
 #pbar.close()
+"""
+
 result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
 
 print(result)
+#save result
+with open('my_array.csv', 'w') as my_file:
+        for i in result:
+            np.savetxt(my_file,i)
+print('Array exported to file')
 
 
 
 
+for i in range(len(result)):
+    #plot density vs x
+    plt.plot(x,result[i,:,3])
+    plt.xlabel("x")
+    plt.ylabel("density")
+    plt.title("density vs x")
+    plt.show()
+    
