@@ -11,10 +11,11 @@ from jplephem.spk import SPK
 
 #set the initial conditions
 
-# density, velocity, pressure, eneergy, distance between particles, mass of particles, number of particles
-initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5,1,0.001875,0.001875,320]
-initial_conditions_x_greater_0=[0.25,0,0,0,1.795,0.1795,0.0075,0.001875,80]
+# density, velocity, pressure, eneergy, distance between particles
+initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5]
+initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
+mass_of_particle=0.001875
 
 #Populate the x axis
 x_less_than_o=np.linspace(0+0.0075,6,320)
@@ -22,16 +23,16 @@ x_greater_than_0=np.linspace(0,-6+0.001875,80)
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 #create an empty state vector
-State_vector=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
+State_vector=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
 
 
 
 #populate the state vector
 for i in range(len(x)):
     if x[i]<=0:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0[:-1]
+        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
     else:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_greater_0[:-1]
+        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_greater_0
 
 
 #position in x direction 0
@@ -84,31 +85,21 @@ def W_derivat(R,r,a_d,h,dx):
 #velocity in y direction 5
 #velocity in z direction 6
 #energy 7
-# pressure 8
-#Distance between particles 9
-#mass of particles 10
-#number of particles 11
 
 
 def G_function(State_vector,t=0):
 
     print(np.shape(State_vector))
     #create an empty derivative of the state vector
-    State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
-    State_vector_2=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+2))
-    
+    State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
 
-    new_pressure=np.zeros(len(x))
-    new_velocity=np.zeros(len(x))
-    new_energy=np.zeros(len(x))
-    new_position=np.zeros(len(x))
-
+    #define the x vector and calcualte the W_ij and delta W_ij
     x_1=State_vector[:,0]
     #r-vector with sign
     r_sign=x_1-x_1[:,np.newaxis]
 
     
-    #print(sumxx)
+    
     
     #r-vector without sign
     r=np.sqrt(r_sign**2)
@@ -128,20 +119,41 @@ def G_function(State_vector,t=0):
             
             W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
             Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
-    #set the dirivative of density as a fnction of mass, current dentsity, current pressure and delta_w
-    )
-
+    
+    #set the derivative of density to be 0 and set current density to be a fucntion
+    State_vector_dir[:,3]=0
+    for i in range(len(x)):
+        State_vector[i,3]=sum(W_value[i,:]*mass_of_particle)
 
     #set the derivate of futere position as the speed
     State_vector_dir[:,0]=State_vector[:,4]
     State_vector_dir[:,1]=State_vector[:,5]
     State_vector_dir[:,2]=State_vector[:,6]
     
+    #set the derivative of the energy
+    #c=math.sqrt((1.4-1)*State_vector[:,7])
+    pressure=np.zeros(len(x))
+    pressure=(1.4-1)*State_vector[:,3]*State_vector[:,7]
+    #print(pressure)
+    for i in range(len(State_vector_dir)):
+        pressure_i=np.zeros(len(x))
+        pressure_i=pressure[i]*np.ones(len(x))
+
+
+        velocity_i=State_vector[i][4]*np.ones(len(x))
+        dencity_i=np.zeros(len(x))
+        dencity_i=State_vector[i,3]*np.ones(len(x))
+
+        State_vector_dir[i][7]=1/2*mass_of_particle*sum((pressure_i/dencity_i**2+pressure/State_vector[:,3]**2)*(velocity_i-State_vector[:,4])*Delta_W_value[i,:])
+       
+
+
+
     return State_vector_dir
     
-
+print(State_vector[0])
 print(G_function(State_vector)[0])
-
+print(State_vector[0])
 """
 W=np.zeros((len(x),6))
 
