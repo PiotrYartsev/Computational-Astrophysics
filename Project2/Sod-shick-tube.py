@@ -173,12 +173,10 @@ result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
 
-print(result)
 #save result
 with open('my_array.csv', 'w') as my_file:
         for i in result:
             np.savetxt(my_file,i)
-            my_file.write('\n\n')
 print('Array exported to file')
 """
 result=[]
