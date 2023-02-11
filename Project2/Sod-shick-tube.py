@@ -13,23 +13,24 @@ initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
 mass_of_particle=0.001875
+visc=0
 
 #Populate the x axis
 x_less_than_o=np.linspace(0+0.0075,6,320)
 x_greater_than_0=np.linspace(0,-6+0.001875,80)
-x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+x_list=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 #create an empty state vector
-State_vector=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
+State_vector=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
 
 
 
 #populate the state vector
-for i in range(len(x)):
-    if x[i]<=0:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
+for i in range(len(x_list)):
+    if x_list[i]<=0:
+        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
     else:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_greater_0
+        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_greater_0
 
 
 #position in x direction 0
@@ -92,7 +93,9 @@ def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i,
 
 def G_function(State_vector,t=0):
 
-    print(np.shape(State_vector))
+    #reshape the state vector and define the variables
+    State_vector=State_vector.reshape((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
+
 
     x=State_vector[:,0]
     y=State_vector[:,1]
@@ -102,11 +105,10 @@ def G_function(State_vector,t=0):
     velocity_y=State_vector[:,5]
     velocity_z=State_vector[:,6]
     energy=State_vector[:,7]
+    #print(State_vector)
 
-
-
-    #create an empty derivative of the state vector
-    State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
+    #create an empty derivative of the state vector 
+    State_vector_dir=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
 
     der_x=State_vector_dir[:,0]
     der_y=State_vector_dir[:,1]
@@ -119,12 +121,10 @@ def G_function(State_vector,t=0):
     
 
     #define the x vector and calcualte the W_ij and delta W_ij
-
     #r-vector with sign
     r_sign=x-x[:,np.newaxis]
 
-    
-    
+
     
     #r-vector without sign
     r=np.sqrt(r_sign**2)
@@ -138,17 +138,19 @@ def G_function(State_vector,t=0):
     Delta_W_value=np.zeros((len(x),len(x)))
     for i in range(len(x)):
         for j in range(len(x)):
-            R[i,j]=float(R[i,j])
-            r[i,j]=float(r[i,j])
-            r_sign[i,j]=float(r_sign[i,j])
-            
-            W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
-            Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
+            if i==j:
+                W_value[i,j]=0
+                Delta_W_value[i,j]=0
+            else:
+                R[i,j]=float(R[i,j])
+                r[i,j]=float(r[i,j])
+                r_sign[i,j]=float(r_sign[i,j])
+                
+                W_value[i,j]=W(R[i,j],r[i,j],a_d,h)
+                Delta_W_value[i,j]=W_derivat(R[i,j],r[i,j],a_d,h,r_sign[i,j])
     
-    #set the derivative of density to be 0 and set current density to be a fucntion
-    State_vector_dir[:,3]=0
-    for i in range(len(x)):
-        State_vector[i,3]=sum(W_value[i,:]*mass_of_particle)
+    #print(W_value)
+    print(Delta_W_value)
 
     #set the derivate of futere position as the speed
     der_x=velocity_x
@@ -164,8 +166,16 @@ def G_function(State_vector,t=0):
     seed_of_sound=np.sqrt((gamma-1)*energy)
 
 
-    State_vector_dir=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
+    for i in range(len(x)):
+        der_energy[i]=1/2*(sum(mass_of_particle*((pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*(velocity_x[i]-velocity_x[:])*Delta_W_value[i,:])))
+        der_velocity_x=-sum(mass_of_particle*(pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*Delta_W_value[i,:])
+    
+    #set the derivative of density to be 0 and set current density to be a fucntion
+    der_density=0
+    for i in range(len(x)):
+        State_vector[i,3]=sum(W_value[i,:]*mass_of_particle)
 
+    #set the derivatives to the values
     State_vector_dir[:,0]=der_x
     State_vector_dir[:,1]=der_y
     State_vector_dir[:,2]=der_z
@@ -175,83 +185,9 @@ def G_function(State_vector,t=0):
     State_vector_dir[:,6]=der_velocity_z
     State_vector_dir[:,7]=der_energy
 
-
+    State_vector_dir=State_vector_dir.reshape(-1)
     return State_vector_dir
-    
-print(State_vector[0])
-print(G_function(State_vector)[0])
-print(State_vector[0])
-"""
-W=np.zeros((len(x),6))
 
-
-for i in range(len(x)):
-    W[i]=np.array([x[i],y[i],z[i],v_x[i],v_y[i],v_z[i]])
-
-
-print(W)
-energy_list = []
-
-def Der_W(t,W):
-
-    W_derivat=np.zeros(len(W))
-
-    for i in range(int(len(W)/6)):
-        W_derivat[i*6]=W[i*6+3]
-        W_derivat[i*6+1]=W[i*6+4]
-        W_derivat[i*6+2]=W[i*6+5]
-        W_derivat[i*6+3]=0
-        W_derivat[i*6+4]=0
-        W_derivat[i*6+5]=0
-
-    kinetic_energy = 0
-    potential_energy = 0
-
-    for i in range(int(len(W)/6)):
-        kinetic_energy += 0.5*masses[i]*(W[i*6+3]**2+W[i*6+4]**2+W[i*6+5]**2)
-        for j in range(int(len(W)/6)):
-            if i!=j:
-                r=math.sqrt((W[i*6]-W[j*6])**2+(W[i*6+1]-W[j*6+1])**2+(W[i*6+2]-W[j*6+2])**2)
-                potential_energy += -G*masses[i]*masses[j]/r
-                W_derivat[i*6+3]+=G*masses[j]*(W[j*6]-W[i*6])/r**3
-                W_derivat[i*6+4]+=G*masses[j]*(W[j*6+1]-W[i*6+1])/r**3
-                W_derivat[i*6+5]+=G*masses[j]*(W[j*6+2]-W[i*6+2])/r**3
-    
-    total_energy = kinetic_energy + potential_energy
-    energy_list.append(total_energy)
-
-    return W_derivat
-
-
-
-#import a function to calculate the Runge-Kutta method
-from scipy.integrate import RK45 as RK45
-
-W=W.reshape(-1)
-
-
-result = []
-
-# Initialize the RK45 integrator
-integrator = RK45(Der_W, t, W, t_end, h,atols=1e-20,rtols=1e-20)
-
-# Integrate the equations of motion
-pbar = tqdm(total=t_end) # set the total progress to the final time
-while integrator.t < t_end:
-    integrator.step()
-    pbar.update(integrator.step_size) # update the progress bar by the step size
-    final_state = integrator.y
-    final_state=final_state.reshape((len(x),6))
-    result.append(final_state)
-pbar.close()
-
-result=np.stack(result)
-
-#for each state of the system, reshape the array to the original shape 
-
-print(result)
-
-
-
-#"""
+State_vector=State_vector.reshape(-1)
+print(G_function(State_vector))
 

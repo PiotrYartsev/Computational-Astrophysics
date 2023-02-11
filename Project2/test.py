@@ -13,23 +13,24 @@ initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
 mass_of_particle=0.001875
-artvisc=0
+visc=0
+
 #Populate the x axis
 x_less_than_o=np.linspace(0+0.0075,6,320)
 x_greater_than_0=np.linspace(0,-6+0.001875,80)
-x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+x_list=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 #create an empty state vector
-State_vector=np.zeros((len(x),len(initial_conditions_x_less_or_equal_0)+3))
+State_vector=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
 
 
 
 #populate the state vector
-for i in range(len(x)):
-    if x[i]<=0:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
+for i in range(len(x_list)):
+    if x_list[i]<=0:
+        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
     else:
-        State_vector[i]=[x[i]]+[0]+[0]+initial_conditions_x_greater_0
+        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_greater_0
 
 
 #position in x direction 0
@@ -91,55 +92,7 @@ def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i,
 
 
 def G_function(State_vector,t=0):
-
-    print(np.shape(State_vector))
-
-    x=State_vector[:,0]
-    y=State_vector[:,1]
-    z=State_vector[:,2]
-    density=State_vector[:,3]
-    velocity_x=State_vector[:,4]
-    velocity_y=State_vector[:,5]
-    velocity_z=State_vector[:,6]
-    energy=State_vector[:,7]
-
-    #initialize the arrays for the outputs of the G_function
-    output_density=np.zeros_like(density)
-    output_velocity_x=np.zeros_like(velocity_x)
-    output_velocity_y=np.zeros_like(velocity_y)
-    output_velocity_z=np.zeros_like(velocity_z)
-    output_energy=np.zeros_like(energy)
-
-    #populate the outputs with the required information
-    for i in tqdm(range(len(x))):
-        for j in range(len(x)):
-            r=np.sqrt((x[i]-x[j])**2+(y[i]-y[j])**2+(z[i]-z[j])**2)
-            R=r/h
-            delta_W_ij=W_derivat(R,r,a_d,h,x[j]-x[i])
-            output_density[i]=output_density[i]+density_function(mass_of_particle, velocity_x[i], velocity_x[j], delta_W_ij)
-            output_velocity_x[i]=output_velocity_x[i]+velocity_function(mass_of_particle, velocity_x[i], velocity_x[j], energy[i], energy[j], density[i], density[j], artvisc, delta_W_ij)
-            output_energy[i]=output_energy[i]+energy_function(mass_of_particle, velocity_x[i], velocity_x[j], energy[i], energy[j], density[i], density[j], artvisc, delta_W_ij)
-
-    return np.array([output_density,output_velocity_x,output_velocity_y,output_velocity_z,output_energy]).T
-
-
-
-#runge-kutta from the scipy library
-from scipy.integrate import solve_ivp
-
-#set the time interval
-t_span=[0,40]
-t_step=0.005
-
-#set the initial conditions
-y0=State_vector
-
-#set the time steps
-t_eval=np.arange(t_span[0],t_span[1],t_step)
-
-#run the simulation
-
-sol=solve_ivp(G_function,t_span,y0,t_eval=t_eval,method='RK45',rtol=1e-8,atol=1e-8)
-
-#plot the results
+    State_vector_derivat=np.zeros(len(State_vector))
+    for i in range(8):
+        State_vector_derivat[i*8]=State_vector[i*8+4]
 
