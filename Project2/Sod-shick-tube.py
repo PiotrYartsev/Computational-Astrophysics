@@ -189,9 +189,13 @@ def G_function(t,State_vector):
 
     #print time 0
     for i in range(len(x)):
-        der_energy[i]=1/2*(sum(mass_of_particle*((pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*(velocity_x[i]-velocity_x[:])*Delta_W_value[i,:])))
-        der_velocity_x[i]=-sum(mass_of_particle*(pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*Delta_W_value[i,:])
-        der_density[i]=sum(mass_of_particle*((velocity_x[i]-velocity_x[:])*Delta_W_value[i,:]))
+        #sheck if length of R is larger than 2
+        if len(R[i,:])>2:
+            pass
+        else:
+            der_energy[i]=1/2*(sum(mass_of_particle*((pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*(velocity_x[i]-velocity_x[:])*Delta_W_value[i,:])))
+            der_velocity_x[i]=-sum(mass_of_particle*(pressure[i]/(density[i]**2) +pressure[:]/(density[:])**2+visc)*Delta_W_value[i,:])
+            der_density[i]=sum(mass_of_particle*((velocity_x[i]-velocity_x[:])*Delta_W_value[i,:]))
     #print the time it took to calculate the derivatives
     #set the derivatives to the values
     State_vector_dir[:,0]=der_x
@@ -230,17 +234,15 @@ integrator = RK45(G_function, t, State_vector, t_end, h,atols=1e-10,rtols=1e-10)
 
 # Integrate the equations of motion
 # set the total progress to be t_end/h
-from progress.bar import Bar
-
-pbar = Bar('Processing', max=int(t_end/h))
-while integrator.t < t_end:
-    integrator.step()
-    pbar.next()
-    final_state = integrator.y
-    final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
-    result.append(final_state)
-pbar.finish()
-
+from tqdm.auto import tqdm
+with tqdm(total=int(t_end/h)) as pbar:
+    while integrator.t < t_end:
+        integrator.step()
+        pbar.update()
+        final_state = integrator.y
+        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
+        result.append(final_state)
+#pbar.close()
 result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
