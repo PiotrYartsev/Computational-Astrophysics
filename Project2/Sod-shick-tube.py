@@ -5,7 +5,6 @@ import scipy as scipy
 import numpy as np
 
 
-
 #set the initial conditions
 
 # density, velocity, pressure, eneergy, distance between particles
@@ -40,11 +39,13 @@ x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 #order 
 
 """
+"""
 #define the smoothing length
 d=1
 h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
 h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
 h=(h_1+h_2)/2
+"""
 """
 #just use a defoult value
 h=0.001875*20
@@ -54,16 +55,7 @@ a_d=1/h
 
 
 #kernel functions
-"""
-def W(R,r,a_d,h):
-    if R<=1 and R>=0 or R==0:
-        output=a_d*(2/3-R**2+1/2*R**3)
-    elif R>1 and R<=2:
-        output=a_d*(1/6*(2-R)**3)
-    else:
-        output=0
-    return output
-"""
+
 def W(R, r, a_d, h):
     output = np.zeros_like(R)
     mask1 = (R >= 0) & (R <= 1)
@@ -76,16 +68,7 @@ def W(R, r, a_d, h):
 
 
 #derivative of the kernel function
-"""
-def W_derivat(R,r,a_d,h,dx):
-    if R<=1 and R>=0 or R==0:
-        output=a_d*(-2+3/2*R)*dx/h**2
-    elif R>1 and R<=2:
-        output=a_d*(-(1/2)*(2-R)**2)*dx/(h*r)
-    else:
-        output=0
-    return output
-"""
+
 def W_derivat(R, r, a_d, h, dx):
     mask1 = (R <= 1) & (R >= 0) | (R == 0)
     mask2 = (R > 1) & (R <= 2)
@@ -184,17 +167,7 @@ with tqdm(total=int(t_end/h)) as pbar:
         final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
         result.append(final_state)
 
-"""
-from tqdm.auto import tqdm
-with tqdm(total=int(t_end/h)) as pbar:
-    while integrator.t < t_end:
-        integrator.step()
-        pbar.update()
-        final_state = integrator.y
-        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
-        result.append(final_state)
-#pbar.close()
-"""
+
 
 result=np.stack(result)
 
@@ -205,16 +178,23 @@ print(result)
 with open('my_array.csv', 'w') as my_file:
         for i in result:
             np.savetxt(my_file,i)
+            my_file.write('\n\n')
 print('Array exported to file')
-
-
+"""
+result=[]
+with open('my_array.csv', 'r') as my_file:
+    for line in my_file:
+        result.append(line)
+result=np.stack(result)
 
 
 for i in range(len(result)):
-    #plot density vs x
-    plt.plot(x,result[i,:,3])
+    print(result[i])
+    x_values=result[i,:,0]  
+    density_values=result[i,:,3]
+    plt.plot(x_values,density_values)
     plt.xlabel("x")
     plt.ylabel("density")
     plt.title("density vs x")
     plt.show()
-    
+#"""
