@@ -38,17 +38,16 @@ for i in range(len(x_list)):
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 #order 
 
-"""
-"""
+
 #define the smoothing length
-d=1
-h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
-h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
-h=(h_1+h_2)/2
-"""
-"""
+def functions():
+    d=1
+    h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
+    h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
+    h=(h_1+h_2)/2
+
 #just use a defoult value
-h=0.001875*20
+h=0.001875*5
 
 a_d=1/h
 
@@ -78,6 +77,8 @@ def W_derivat(R, r, a_d, h, dx):
     output[mask2] = a_d * (-(1/2) * (2 - R[mask2])**2) * dx[mask2] / (h * r[mask2])
     
     return output
+
+
 
 def density_function(mass,velocity_i, velocity_j, delta_W_ij):
     return mass*(velocity_i-velocity_j)*delta_W_ij
@@ -115,12 +116,16 @@ def G_function(t, State_vector):
     W_value[np.eye(len(x), dtype=bool)] = 0
     Delta_W_value[np.eye(len(x), dtype=bool)] = 0
 
+    #PRINT the number of non zero elements in the W_value matrix
+    print(np.count_nonzero(W_value))
+
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
     State_vector_dir[:, 2] = State_vector[:, 6]
 
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    print(pressure)
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
 
     temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
@@ -133,8 +138,8 @@ def G_function(t, State_vector):
     return State_vector_dir.reshape(-1)
 
 
-
-
+G_function(0,State_vector)
+"""
 #solve the differential equation using runge kutta
 
 #import a function to calculate the Runge-Kutta method
@@ -178,21 +183,69 @@ with open('my_array.csv', 'w') as my_file:
         for i in result:
             np.savetxt(my_file,i)
 print('Array exported to file')
-"""
+
 result=[]
-with open('my_array.csv', 'r') as my_file:
-    for line in my_file:
-        result.append(line)
-result=np.stack(result)
+my_file = open('my_array.csv', 'r')
+lines=my_file.readlines()
+
+#split into list of lines of length 400 each
+for i in range(0,len(lines),400):
+    result.append(lines[i:i+400])
+
+result2=[]
+for section in tqdm(result):
+    output=[]
+    for part in section: 
+        part=part.replace('\n','')
+        part=part.split(' ')
+        part=[float(i) for i in part]
+        output.append(part)
+    result2.append(output)
+
+result=np.array(result2)
+print(result.shape)
+    
+
+section=result[-1]
+x=section[:,0]
+density=section[:,3]
+
+energy=section[:,7]
+gamma=1.4
+pressure=(gamma-1)*density*energy
+
+velocity_x=section[:,4]
+#make 4 plots side by side
+fig, axs = plt.subplots(1, 4,figsize=(20,5))
+axs[0].plot(x,density)
+axs[0].set_title('density')
+axs[1].plot(x,pressure)
+axs[1].set_title('pressure')
+axs[2].plot(x,velocity_x)
+axs[2].set_title('velocity_x')
+axs[3].plot(x,energy)
+axs[3].set_title('energy')
+plt.show()
 
 
-for i in range(len(result)):
-    print(result[i])
-    x_values=result[i,:,0]  
-    density_values=result[i,:,3]
-    plt.plot(x_values,density_values)
-    plt.xlabel("x")
-    plt.ylabel("density")
-    plt.title("density vs x")
+for section in result:
+    x=section[:,0]
+    density=section[:,3]
+
+    energy=section[:,7]
+    gamma=1.4
+    pressure=(gamma-1)*density*energy
+
+    velocity_x=section[:,4]
+    #make 4 plots side by side
+    fig, axs = plt.subplots(1, 4,figsize=(20,5))
+    axs[0].plot(x,density)
+    axs[0].set_title('density')
+    axs[1].plot(x,pressure)
+    axs[1].set_title('pressure')
+    axs[2].plot(x,velocity_x)
+    axs[2].set_title('velocity_x')
+    axs[3].plot(x,energy)
+    axs[3].set_title('energy')
     plt.show()
 #"""
