@@ -117,7 +117,7 @@ def G_function(t, State_vector):
     Delta_W_value[np.eye(len(x), dtype=bool)] = 0
 
     #PRINT the number of non zero elements in the W_value matrix
-    print(np.count_nonzero(W_value))
+    #print(np.count_nonzero(W_value))
 
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
