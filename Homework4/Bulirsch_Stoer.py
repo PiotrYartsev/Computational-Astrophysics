@@ -1,3 +1,14 @@
+#change the values of a and b to get different results
+
+x_0 = 0 # Initial value
+t = 0  # Start time
+a = 0   # Start time
+b = 2  # End time
+
+
+
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,10 +39,6 @@ def bulirsch_stoer(x_0,function,t,h,N):
 def f(t, x):
     return np.cos(t)
 
-x_0 = 0 # Initial value
-t = 0  # Start time
-a = 0   # Start time
-b = 2  # End time
 
 
 x_list = []
