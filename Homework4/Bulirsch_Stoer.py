@@ -59,7 +59,7 @@ while True:
     iterations+=1
     print("Iteration: "+str(iterations))
     N_start = N_start*2
-    h = np.float128((b - a) / N_start)
+    h = np.float64((b - a) / N_start)
     x = bulirsch_stoer(x_0, f, t, h, N_start)
 
 
