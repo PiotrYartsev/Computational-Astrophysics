@@ -196,7 +196,7 @@ with tqdm(total=int(t_end/h)) as pbar:
 result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
-
+"""
 print(result)
 #save result to a txt file
 file=open("result.txt","w")
@@ -204,8 +204,7 @@ for i in range(len(result)):
     file.write(str(result[i]))
     file.write("\n")
 file.close()
-
-
+"""
 
 for i in range(len(result)):
     #plot density vs x

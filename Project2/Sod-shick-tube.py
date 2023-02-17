@@ -87,7 +87,7 @@ def velocity_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_
     return -mass*(pressure_i/(density_i**2)+pressure_j/(density_j**2)+artvisc)*delta_W_ij
 
 def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i, density_j, artvisc, delta_W_ij):
-    return -1/2 * mass*(velocity_i*pressure_i/(density_i**2)+velocity_j*pressure_j/(density_j**2)+artvisc*velocity_i)*delta_W_ij
+    return 1/2 * mass*(velocity_i*pressure_i/(density_i**2)+velocity_j*pressure_j/(density_j**2)+artvisc*velocity_i)*delta_W_ij
 #position in x direction 0
 #position in y direction 1
 #position in z direction 2
@@ -125,7 +125,7 @@ def G_function(t, State_vector):
 
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
-    print(pressure)
+    #print(pressure)
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
 
     temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
@@ -139,7 +139,7 @@ def G_function(t, State_vector):
 
 
 G_function(0,State_vector)
-"""
+
 #solve the differential equation using runge kutta
 
 #import a function to calculate the Runge-Kutta method
@@ -177,7 +177,7 @@ with tqdm(total=int(t_end/h)) as pbar:
 result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
-
+"""
 #save result
 with open('my_array.csv', 'w') as my_file:
         for i in result:
@@ -204,7 +204,7 @@ for section in tqdm(result):
 
 result=np.array(result2)
 print(result.shape)
-    
+"""
 
 section=result[-1]
 x=section[:,0]
@@ -226,7 +226,6 @@ axs[2].set_title('velocity_x')
 axs[3].plot(x,energy)
 axs[3].set_title('energy')
 plt.show()
-
 
 for section in result:
     x=section[:,0]
