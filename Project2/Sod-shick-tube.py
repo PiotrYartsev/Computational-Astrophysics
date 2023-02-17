@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import scipy as scipy
 import numpy as np
 from numpy.linalg import norm 
-
+import sys
+import numpy
+numpy.set_printoptions(threshold=sys.maxsize)
 #set the initial conditions
 
 # density, velocity, pressure, eneergy, distance between particles
@@ -15,11 +17,21 @@ mass_of_particle=0.001875
 visc=0
 
 #Populate the x axis
-x_less_than_o=np.linspace(0+0.0075,-6,320)
-x_greater_than_0=np.linspace(0,6+0.001875,80)
-x_list=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+less=0.0075
+more=0.001875
+x_list=[]
+start=-0.6
+for i in range(320):
+    x_list.append(start)
+    start=start+more
+for i in range(80):
+    x_list.append(start)
+    start=start+less
+
+
+
 #order the x_list
-x_list=np.sort(x_list)
+#x_list=np.sort(x_list)
 
 #create an empty state vector
 State_vector=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
@@ -35,7 +47,7 @@ for i in range(len(x_list)):
 
 
 #position in x direction 0
-x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
+x=State_vector[:,0]
 
 #d=1
 #h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
@@ -54,20 +66,19 @@ def W(dx,h):
     R=r/h
     if R<=1 and R>=0:
         return a_d * (2/3 - R**2 + 1/2 * R**3)
-    elif R>1 and R<=2:
+    else:
         return a_d * (1/6 * (2-R)**3)
 
 
 #derivative of the kernel function
-
 def W_derivat(dx,h):
     a_d=1/h
     r=norm(dx)
     R=r/h
     if R<=1 and R>=0:
         return a_d * (-2 + 3/2 * R) * dx / h**2
-    elif R>1 and R<=2:
-        return a_d * (-(1/2) * (2 - R)**2) * dx / (h * r)
+    else:
+        return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
 
 #position in x direction 0
 #position in y direction 1
@@ -81,7 +92,7 @@ import time as time
 
 def G_function(t, State_vector):
     State_vector = State_vector.reshape((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
-
+    #print(State_vector[0])
     State_vector_dir = np.zeros((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
 
 
@@ -89,35 +100,30 @@ def G_function(t, State_vector):
     h_1=0.01878527*5
     h_2=0.01878527
     
-
     h_list=[]
-    for i in range(80):
+    for i in range(320):
         h_list.append(h_1)
-    for i in range(80,len(x_list)):
+    for i in range(320,len(x_list)):
         h_list.append(h_2)
 
     k=2
     dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
-    
+
     W_value = np.zeros((len(x), len(x)))
     Delta_W_value = np.zeros((len(x), len(x)))
     h_tes=[]
+
     for i in range(len(x)):
         for j in range(len(x)):
             h=(h_list[i]+h_list[j])/2
-            #print(h)
             if h not in h_tes:
                 h_tes.append(h)
             if norm(dx[i, j])<=(k*(h)):
-                
                 W_value[i, j] = W(dx[i,j], h)
+                #print(W_value[i, j])
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h)
-
-    print(h_tes)
-    #print(Delta_W_value)
+                #print(Delta_W_value[i, j])
     
-    #PRINT the number of non zero non None elements in the W_value matrix
-    #print(W_value)
     
 
     State_vector_dir[:, 0] = State_vector[:, 4]
@@ -137,10 +143,11 @@ def G_function(t, State_vector):
     State_vector_dir[:,3]=0
     State_vector[:,3]=np.sum(mass_of_particle * W_value, axis=1)
 
-    plt.plot(State_vector[:,0],pressure)
-    plt.show(block=False)
-    plt.pause(2)
-    plt.close()
+    #plt.plot(State_vector[:,0],pressure)
+    #plt.show(block=False)
+    #plt.pause(2)
+    #plt.show()
+    #plt.close()
 
     
     return State_vector_dir.reshape(-1)
@@ -150,16 +157,19 @@ def G_function(t, State_vector):
 from scipy.integrate import RK45 as RK45
 
 #flatten the state vector
-
-
+result = []
+result.append(State_vector.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3)))
 State_vector=State_vector.reshape(-1)
 #run it once to see if it works
 G_function(0,State_vector)
 
 
-result = []
+#add the strating state to the result
+
+# Set the initial conditions
+
 t=0
-t_end=1
+t_end=0.1
 h=0.005
 # Initialize the RK45 integrator
 integrator = RK45(G_function, t, State_vector, t_end, h)
@@ -176,40 +186,9 @@ with tqdm(total=int(t_end/h)) as pbar:
         final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
         result.append(final_state)
 
-
-
 result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
-"""
-def funct():
-    #save result
-    with open('my_array.csv', 'w') as my_file:
-            for i in result:
-                np.savetxt(my_file,i)
-    print('Array exported to file')
-
-    result=[]
-    my_file = open('my_array.csv', 'r')
-    lines=my_file.readlines()
-
-    #split into list of lines of length 400 each
-    for i in range(0,len(lines),400):
-        result.append(lines[i:i+400])
-
-    result2=[]
-    for section in tqdm(result):
-        output=[]
-        for part in section: 
-            part=part.replace('\n','')
-            part=part.split(' ')
-            part=[float(i) for i in part]
-            output.append(part)
-        result2.append(output)
-
-    result=np.array(result2)
-    print(result.shape)
-"""
 
 section=result[-1]
 x=section[:,0]
