@@ -199,6 +199,8 @@ gamma=1.4
 pressure=(gamma-1)*density*energy
 
 velocity_x=section[:,4]
+x, density, pressure, velocity_x, energy = zip(*sorted(zip(x, density, pressure, velocity_x, energy)))
+
 #make 4 plots side by side
 fig, axs = plt.subplots(1, 4,figsize=(20,5))
 axs[0].plot(x,density)
@@ -213,6 +215,7 @@ plt.show()
 
 for section in result:
     x=section[:,0]
+    
     density=section[:,3]
 
     energy=section[:,7]
@@ -220,6 +223,9 @@ for section in result:
     pressure=(gamma-1)*density*energy
 
     velocity_x=section[:,4]
+
+    #order all list by x
+    x, density, pressure, velocity_x, energy = zip(*sorted(zip(x, density, pressure, velocity_x, energy)))
     #make 4 plots side by side
     fig, axs = plt.subplots(1, 4,figsize=(20,5))
     axs[0].plot(x,density)
