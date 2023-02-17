@@ -15,8 +15,8 @@ mass_of_particle=0.001875
 visc=0
 
 #Populate the x axis
-x_less_than_o=np.linspace(0+0.0075,6,320)
-x_greater_than_0=np.linspace(0,-6+0.001875,80)
+x_less_than_o=np.linspace(0+0.0075,-6,320)
+x_greater_than_0=np.linspace(0,6+0.001875,80)
 x_list=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 #order the x_list
 x_list=np.sort(x_list)
@@ -40,43 +40,41 @@ x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 
 #define the smoothing length
-def functions():
-    d=1
-    h_1=1.3*(initial_conditions_x_less_or_equal_0[-2]/initial_conditions_x_less_or_equal_0[4])**(1/d)
-    h_2=1.3*(initial_conditions_x_greater_0[-2]/initial_conditions_x_greater_0[4])**(1/d)
-    h=(h_1+h_2)/2
 
-#just use a defoult value
-h=0.001875*5
+#d=1
+#h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
+#h_2=1.3*(mass_of_particle/initial_conditions_x_greater_0[0])**(1/d)
 
-a_d=1/h
+
+
+
+
 
 
 
 #kernel functions
 
-def W(R, r, a_d, h):
-    output = np.zeros_like(R)
-    mask1 = (R >= 0) & (R <= 1)
-    mask2 = (R > 1) & (R <= 2)
-    output[mask1] = a_d * (2/3 - R[mask1]**2 + 1/2 * R[mask1]**3)
-    output[mask2] = a_d * (1/6 * (2-R[mask2])**3)
-    return output
-
-
+def W(dx,h):
+    a_d=1/h
+    r=np.abs(dx)
+    R=r/h
+    if R<=1 and R>=0:
+        return a_d * (2/3 - R**2 + 1/2 * R**3)
+    elif R>1 and R<=2:
+        return a_d * (1/6 * (2-R)**3)
 
 
 #derivative of the kernel function
 
-def W_derivat(R, r, a_d, h, dx):
-    mask1 = (R <= 1) & (R >= 0) | (R == 0)
-    mask2 = (R > 1) & (R <= 2)
-    
-    output = np.zeros_like(R)
-    output[mask1] = a_d * (-2 + 3/2 * R[mask1]) * dx[mask1] / h**2
-    output[mask2] = a_d * (-(1/2) * (2 - R[mask2])**2) * dx[mask2] / (h * r[mask2])
-    
-    return output
+def W_derivat(dx,h):
+    a_d=1/h
+    r=np.abs(dx)
+    R=r/h
+    if R<=1 and R>=0:
+        return a_d * (-2 + 3/2 * R) * dx / h**2
+    elif R>1 and R<=2:
+        return a_d * (-(1/2) * (2 - R)**2) * dx / (h * r)
+
 
 
 
@@ -103,21 +101,41 @@ def G_function(t, State_vector):
 
     State_vector_dir = np.zeros((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
 
-    r_sign = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
-    r = np.sqrt(r_sign**2)
-    R = r/h
 
+    #just use a defoult value
+    h_1=0.01878527*5
+    h_2=0.01878527
+    
+
+    h_list=[]
+    for i in range(80):
+        h_list.append(h_1)
+    for i in range(80,len(x_list)):
+        h_list.append(h_2)
+
+    k=2
+    dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
+    
     W_value = np.zeros((len(x), len(x)))
     Delta_W_value = np.zeros((len(x), len(x)))
+    h_tes=[]
+    for i in range(len(x)):
+        for j in range(len(x)):
+            h=(h_list[i]+h_list[j])/2
+            #print(h)
+            if h not in h_tes:
+                h_tes.append(h)
+            if np.abs(dx[i, j])<(k*(h)):
+                
+                W_value[i, j] = W(dx[i,j], h)
+                Delta_W_value[i, j] = W_derivat(dx[i, j], h)
 
-    W_value = W(R, r, a_d, h)
-    Delta_W_value = W_derivat(R, r, a_d, h, r_sign)
-
-    W_value[np.eye(len(x), dtype=bool)] = 0
-    Delta_W_value[np.eye(len(x), dtype=bool)] = 0
-
-    #PRINT the number of non zero elements in the W_value matrix
-    #print(np.count_nonzero(W_value))
+    #print(h_tes)
+    #print(Delta_W_value)
+    
+    #PRINT the number of non zero non None elements in the W_value matrix
+    print(W_value)
+    
 
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
@@ -133,14 +151,18 @@ def G_function(t, State_vector):
 
     State_vector_dir[:, 7] = 1/2 * np.sum(mass_of_particle * (temp1 * temp2), axis=1)
     State_vector_dir[:, 4] = -np.sum(mass_of_particle * (temp1 * Delta_W_value), axis=1)
-    State_vector_dir[:, 3] = np.sum(mass_of_particle * ((State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value), axis=1)
+    #State_vector_dir[:, 3] = np.sum(mass_of_particle * ((State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value), axis=1)
+    State_vector_dir[:,3]=0
+    State_vector[:,3]=np.sum(mass_of_particle * W_value, axis=1)
 
+    #plt.plot(State_vector[:,0],pressure)
+    #plt.show(block=False)
+    #plt.pause(1)
+    #plt.close()
+
+    
     return State_vector_dir.reshape(-1)
 
-
-G_function(0,State_vector)
-
-#solve the differential equation using runge kutta
 
 #import a function to calculate the Runge-Kutta method
 from scipy.integrate import RK45 as RK45
@@ -155,10 +177,10 @@ print(G_function(0,State_vector))
 
 result = []
 t=0
-t_end=40
+t_end=1
 h=0.005
 # Initialize the RK45 integrator
-integrator = RK45(G_function, t, State_vector, t_end, h,atols=1e-10,rtols=1e-10)
+integrator = RK45(G_function, t, State_vector, t_end, h)
 
 # Integrate the equations of motion
 # set the total progress to be t_end/h
@@ -178,32 +200,33 @@ result=np.stack(result)
 
 #for each state of the system, reshape the array to the original shape 
 """
-#save result
-with open('my_array.csv', 'w') as my_file:
-        for i in result:
-            np.savetxt(my_file,i)
-print('Array exported to file')
+def funct():
+    #save result
+    with open('my_array.csv', 'w') as my_file:
+            for i in result:
+                np.savetxt(my_file,i)
+    print('Array exported to file')
 
-result=[]
-my_file = open('my_array.csv', 'r')
-lines=my_file.readlines()
+    result=[]
+    my_file = open('my_array.csv', 'r')
+    lines=my_file.readlines()
 
-#split into list of lines of length 400 each
-for i in range(0,len(lines),400):
-    result.append(lines[i:i+400])
+    #split into list of lines of length 400 each
+    for i in range(0,len(lines),400):
+        result.append(lines[i:i+400])
 
-result2=[]
-for section in tqdm(result):
-    output=[]
-    for part in section: 
-        part=part.replace('\n','')
-        part=part.split(' ')
-        part=[float(i) for i in part]
-        output.append(part)
-    result2.append(output)
+    result2=[]
+    for section in tqdm(result):
+        output=[]
+        for part in section: 
+            part=part.replace('\n','')
+            part=part.split(' ')
+            part=[float(i) for i in part]
+            output.append(part)
+        result2.append(output)
 
-result=np.array(result2)
-print(result.shape)
+    result=np.array(result2)
+    print(result.shape)
 """
 
 section=result[-1]
