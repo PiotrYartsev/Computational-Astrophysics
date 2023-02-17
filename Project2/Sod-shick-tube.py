@@ -3,7 +3,7 @@ import math as math
 import matplotlib.pyplot as plt
 import scipy as scipy
 import numpy as np
-
+from numpy.linalg import norm 
 
 #set the initial conditions
 
@@ -36,10 +36,6 @@ for i in range(len(x_list)):
 
 #position in x direction 0
 x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
-#order 
-
-
-#define the smoothing length
 
 #d=1
 #h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
@@ -50,13 +46,11 @@ x=np.concatenate((x_less_than_o,x_greater_than_0),axis=0)
 
 
 
-
-
 #kernel functions
 
 def W(dx,h):
     a_d=1/h
-    r=np.abs(dx)
+    r=norm(dx)
     R=r/h
     if R<=1 and R>=0:
         return a_d * (2/3 - R**2 + 1/2 * R**3)
@@ -68,24 +62,13 @@ def W(dx,h):
 
 def W_derivat(dx,h):
     a_d=1/h
-    r=np.abs(dx)
+    r=norm(dx)
     R=r/h
     if R<=1 and R>=0:
         return a_d * (-2 + 3/2 * R) * dx / h**2
     elif R>1 and R<=2:
         return a_d * (-(1/2) * (2 - R)**2) * dx / (h * r)
 
-
-
-
-def density_function(mass,velocity_i, velocity_j, delta_W_ij):
-    return mass*(velocity_i-velocity_j)*delta_W_ij
-
-def velocity_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i, density_j, artvisc, delta_W_ij):
-    return -mass*(pressure_i/(density_i**2)+pressure_j/(density_j**2)+artvisc)*delta_W_ij
-
-def energy_function(mass,velocity_i, velocity_j,pressure_i,pressure_j,density_i, density_j, artvisc, delta_W_ij):
-    return 1/2 * mass*(velocity_i*pressure_i/(density_i**2)+velocity_j*pressure_j/(density_j**2)+artvisc*velocity_i)*delta_W_ij
 #position in x direction 0
 #position in y direction 1
 #position in z direction 2
@@ -125,16 +108,16 @@ def G_function(t, State_vector):
             #print(h)
             if h not in h_tes:
                 h_tes.append(h)
-            if np.abs(dx[i, j])<(k*(h)):
+            if norm(dx[i, j])<=(k*(h)):
                 
                 W_value[i, j] = W(dx[i,j], h)
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h)
 
-    #print(h_tes)
+    print(h_tes)
     #print(Delta_W_value)
     
     #PRINT the number of non zero non None elements in the W_value matrix
-    print(W_value)
+    #print(W_value)
     
 
     State_vector_dir[:, 0] = State_vector[:, 4]
@@ -143,7 +126,6 @@ def G_function(t, State_vector):
 
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
-    #print(pressure)
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
 
     temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
@@ -155,10 +137,10 @@ def G_function(t, State_vector):
     State_vector_dir[:,3]=0
     State_vector[:,3]=np.sum(mass_of_particle * W_value, axis=1)
 
-    #plt.plot(State_vector[:,0],pressure)
-    #plt.show(block=False)
-    #plt.pause(1)
-    #plt.close()
+    plt.plot(State_vector[:,0],pressure)
+    plt.show(block=False)
+    plt.pause(2)
+    plt.close()
 
     
     return State_vector_dir.reshape(-1)
@@ -172,7 +154,7 @@ from scipy.integrate import RK45 as RK45
 
 State_vector=State_vector.reshape(-1)
 #run it once to see if it works
-print(G_function(0,State_vector))
+G_function(0,State_vector)
 
 
 result = []
