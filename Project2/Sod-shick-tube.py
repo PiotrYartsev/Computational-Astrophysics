@@ -158,7 +158,7 @@ from scipy.integrate import RK45 as RK45
 
 #flatten the state vector
 result = []
-result.append(State_vector.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3)))
+result.append(State_vector)
 State_vector=State_vector.reshape(-1)
 #run it once to see if it works
 G_function(0,State_vector)
