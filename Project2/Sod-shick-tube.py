@@ -1,7 +1,6 @@
 from tqdm.notebook import tqdm
 import math as math
 import matplotlib.pyplot as plt
-import scipy as scipy
 import numpy as np
 from numpy.linalg import norm 
 import sys
@@ -17,49 +16,24 @@ mass_of_particle=0.001875
 visc=0
 
 #Populate the x axis
-less=0.0075
-more=0.001875
-x_list=[]
+small_step=0.6/80
 start=-0.6
-for i in range(320):
-    x_list.append(start)
-    start=start+more
-for i in range(80):
-    x_list.append(start)
-    start=start+less
-
-
-
-#order the x_list
-#x_list=np.sort(x_list)
-
-#create an empty state vector
-State_vector=np.zeros((len(x_list),len(initial_conditions_x_less_or_equal_0)+3))
-
-
-
-#populate the state vector
-for i in range(len(x_list)):
-    if x_list[i]<=0:
-        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_less_or_equal_0
-    else:
-        State_vector[i]=[x_list[i]]+[0]+[0]+initial_conditions_x_greater_0
-
-
-#position in x direction 0
+State_vector=[]
+for i in np.linspace(-0.6,0,320):
+    State_vector.append((i, 0, 0, initial_conditions_x_less_or_equal_0[0], initial_conditions_x_less_or_equal_0[1], initial_conditions_x_less_or_equal_0[2], initial_conditions_x_less_or_equal_0[3], initial_conditions_x_less_or_equal_0[4]))
+for i in np.linspace(0+small_step,0.6+small_step,80):
+    State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
+State_vector=np.array(State_vector)
 x=State_vector[:,0]
+print(State_vector.shape)
+print(State_vector[0])
 
 #d=1
 #h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
 #h_2=1.3*(mass_of_particle/initial_conditions_x_greater_0[0])**(1/d)
 
 
-
-
-
-
 #kernel functions
-
 def W(dx,h):
     a_d=1/h
     r=norm(dx)
@@ -90,10 +64,8 @@ def W_derivat(dx,h):
 #energy 7
 import time as time
 
-def G_function(t, State_vector):
-    State_vector = State_vector.reshape((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
-    #print(State_vector[0])
-    State_vector_dir = np.zeros((len(x_list), len(initial_conditions_x_less_or_equal_0) + 3))
+def G_function(State_vector,t):
+    State_vector_dir = np.zeros((400, len(initial_conditions_x_less_or_equal_0) + 3))
 
 
     #just use a defoult value
@@ -103,18 +75,18 @@ def G_function(t, State_vector):
     h_list=[]
     for i in range(320):
         h_list.append(h_1)
-    for i in range(320,len(x_list)):
+    for i in range(320,400):
         h_list.append(h_2)
 
     k=2
     dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
 
-    W_value = np.zeros((len(x), len(x)))
-    Delta_W_value = np.zeros((len(x), len(x)))
+    W_value = np.zeros((400, 400))
+    Delta_W_value = np.zeros((400, 400))
     h_tes=[]
 
-    for i in range(len(x)):
-        for j in range(len(x)):
+    for i in range(400):
+        for j in range(400):
             h=(h_list[i]+h_list[j])/2
             if h not in h_tes:
                 h_tes.append(h)
@@ -143,92 +115,93 @@ def G_function(t, State_vector):
     State_vector_dir[:,3]=0
     State_vector[:,3]=np.sum(mass_of_particle * W_value, axis=1)
 
-    #plt.plot(State_vector[:,0],pressure)
-    #plt.show(block=False)
-    #plt.pause(2)
-    #plt.show()
-    #plt.close()
-
     
-    return State_vector_dir.reshape(-1)
-
-
-#import a function to calculate the Runge-Kutta method
-from scipy.integrate import RK45 as RK45
-
-#flatten the state vector
-result = []
-result.append(State_vector.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3)))
-State_vector=State_vector.reshape(-1)
-#run it once to see if it works
-G_function(0,State_vector)
-
-
-#add the strating state to the result
+    return State_vector_dir, State_vector
 
 # Set the initial conditions
 
 t=0
-t_end=0.1
 h=0.005
+t_end=h*40
+
 # Initialize the RK45 integrator
-integrator = RK45(G_function, t, State_vector, t_end, h)
+def RK4(State_vector,t,h,G_function):
+    k1,State_vector=G_function(State_vector,t)
+    #print(k1)
 
-# Integrate the equations of motion
-# set the total progress to be t_end/h
-#prevent the progress bar to be reprinted and update the progress bar
-from tqdm.auto import tqdm
-with tqdm(total=int(t_end/h)) as pbar:
-    while integrator.t < t_end:
-        integrator.step()
-        pbar.update()
-        final_state = integrator.y
-        final_state = final_state.reshape((len(x), len(initial_conditions_x_less_or_equal_0) + 3))
-        result.append(final_state)
+    k1=h*k1
+    k2,State_vector=G_function(State_vector+0.5*k1,t+0.5*h)
+    k2=h*k2
+    k3,State_vector=G_function(State_vector+0.5*k2,t+0.5*h)
+    k3=h*k3
+    k4,State_vector=G_function(State_vector+k3,t+h)
+    k4=h*k4
+    W_next=State_vector+(k1+2*k2+2*k3+k4)/6
+    return W_next
 
-result=np.stack(result)
+# To store the results
+result = np.zeros((int((t_end - t) / h), 400, len(initial_conditions_x_less_or_equal_0) + 3))
 
-#for each state of the system, reshape the array to the original shape 
+# Iterate over time steps using tqdm to display a progress bar
+from tqdm import tqdm
+pbar = tqdm(total=int((t_end - t) / h))
+for i, t in enumerate(np.arange(t, t_end, h)):
+    pbar.update(1)
+    result[i]=State_vector
+    State_vector = RK4(State_vector, t, h, G_function)
 
-section=result[-1]
-x=section[:,0]
-density=section[:,3]
 
-energy=section[:,7]
-gamma=1.4
-pressure=(gamma-1)*density*energy
 
-velocity_x=section[:,4]
-#make 4 plots side by side
-fig, axs = plt.subplots(1, 4,figsize=(20,5))
-axs[0].plot(x,density)
-axs[0].set_title('density')
-axs[1].plot(x,pressure)
-axs[1].set_title('pressure')
-axs[2].plot(x,velocity_x)
-axs[2].set_title('velocity_x')
-axs[3].plot(x,energy)
-axs[3].set_title('energy')
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+
+fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+
+x = result[:, :, 0]
+density = result[:, :, 3]
+energy = result[:, :, 7]
+gamma = 1.4
+pressure = (gamma - 1) * density * energy
+velocity_x = result[:, :, 4]
+
+lines = [ax.plot([], [])[0] for ax in axs]
+
+def init():
+    for line in lines:
+        line.set_data([], [])
+    axs[0].set_title('density')
+    axs[1].set_title('pressure')
+    axs[2].set_title('velocity_x')
+    axs[3].set_title('energy')
+    return lines
+
+def update(frame):
+    for i, line in enumerate(lines):
+        #order x and make averythign else follow the same order
+
+
+        if i == 0:
+            line.set_data(x[frame], density[frame])
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(density), np.max(density)])
+        elif i == 1:
+            line.set_data(x[frame], pressure[frame])
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(pressure), np.max(pressure)])
+        elif i == 2:
+            line.set_data(x[frame], velocity_x[frame])
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(velocity_x), np.max(velocity_x)])
+        elif i == 3:
+            line.set_data(x[frame], energy[frame])
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(energy), np.max(energy)])
+    return lines
+
+anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
+
 plt.show()
 
-for section in result:
-    x=section[:,0]
-    density=section[:,3]
-
-    energy=section[:,7]
-    gamma=1.4
-    pressure=(gamma-1)*density*energy
-
-    velocity_x=section[:,4]
-    #make 4 plots side by side
-    fig, axs = plt.subplots(1, 4,figsize=(20,5))
-    axs[0].plot(x,density)
-    axs[0].set_title('density')
-    axs[1].plot(x,pressure)
-    axs[1].set_title('pressure')
-    axs[2].plot(x,velocity_x)
-    axs[2].set_title('velocity_x')
-    axs[3].plot(x,energy)
-    axs[3].set_title('energy')
-    plt.show()
 #"""
