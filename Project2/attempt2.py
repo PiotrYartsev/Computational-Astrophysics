@@ -61,12 +61,6 @@ def SPH(State_vector):
 
     State_vector_dir=np.zeros((len(State_vector),len(State_vector[0])))
 
-    pressure=[(gamma-1)*(State_vector[i][-1])*(State_vector[i][-2]) for i in range(len(State_vector))]
-    
-    #set the derivative of the position to the velocity
-    State_vector_dir[:,0]=State_vector[:,3]
-    State_vector_dir[:,1]=State_vector[:,4]
-    State_vector_dir[:,2]=State_vector[:,5]
     #print(State_vector_dir)
     
     h_1=0.01878527*5
@@ -95,21 +89,82 @@ def SPH(State_vector):
     W_deriv_matrix=np.where(r!=0,W_gradient(r,h_vect),0)
 
 
-    #set the diagonal to 0
-    np.fill_diagonal(W_matrix,0)
-    np.fill_diagonal(W_deriv_matrix,0)
-    #print(W_matrix)
-    #plot the W matrix with 0 as balck and 1 as white
-
-    plt.imshow(W_matrix, cmap='gray')
-    plt.show()
-    plt.close()
-    #print(W_matrix)
-    plt.imshow(W_deriv_matrix, cmap='gray')
-    plt.show()
     
+    #calculate the velocity
+    pressure=[(gamma-1)*(State_vector[i][-1])*(State_vector[i][-2]) for i in range(len(State_vector))]
+    #make pressure2 a 400x400 matrix where the elements are pressure_i/density_i**2 + pressure_j/density_j**2
+    pressure2=np.zeros((len(State_vector),len(State_vector)))
+    for i in range(len(State_vector)):
+        pressure2[i]=pressure[i]/State_vector[i][-2]**2
+    pressure2=pressure2+pressure2.T
+    
+    
+    State_vector_dir[:,3]=-mass_of_particle*np.sum(W_deriv_matrix*(pressure2+gamma),axis=1)
+    
+    #calculate the energy
+    #make a velocity matrix 400x400 v_i-v_j fot v_x
+    velocity_matrix=np.zeros((len(State_vector),len(State_vector)))
+    for i in range(len(State_vector)):
+        velocity_matrix[i]=State_vector[i][3]-State_vector[:,3]
 
     
+    State_vector_dir[:,7]=(1/2)*mass_of_particle*np.sum(W_deriv_matrix*(pressure2+gamma)*velocity_matrix,axis=1)
+    #set the derivative of the position to the velocity
+    State_vector_dir[:,0]=State_vector[:,3]
+    State_vector_dir[:,1]=State_vector[:,4]
+    State_vector_dir[:,2]=State_vector[:,5]
+    
+    #calculate the density equal to zero
+    State_vector[:,6]=mass_of_particle*np.sum(W_matrix,axis=1)
+    State_vector_dir[:,6]=0
+
+    return State_vector_dir
 
 
-SPH(State_vector)
+#print(SPH(State_vector)[0][320],SPH(State_vector)[1][320])
+
+def RK4(State_vector):
+    
+    k1=SPH(State_vector)
+    k2=SPH(State_vector+0.5*k1)
+    k3=SPH(State_vector+0.5*k2)
+    k4=SPH(State_vector+k3)
+    State_vector=State_vector+(1/6)*(k1+2*k2+2*k3+k4)
+    return State_vector
+
+t_0=0
+h=0.005
+t_f=h*40
+
+t_list=np.arange(t_0,t_f,h)
+result=np.zeros((len(t_list)+1,len(State_vector),len(State_vector[0])))
+print(len(t_list))
+print(result.shape)
+result[0]=State_vector
+for i in range(len(t_list)):
+    State_vector=RK4(State_vector)
+    print(i)
+    result[i+1]=State_vector
+
+for section in result[10:12]:
+    x=section[:,0]
+    print(len(x))
+    velocity_x=section[:,3]
+    density=section[:,6]
+    pressure=[(gamma-1)*(section[i][-1])*(section[i][-2]) for i in range(len(section))]
+    energy=section[:,7]
+
+
+    #order all list by x
+    x, density, pressure, velocity_x, energy = zip(*sorted(zip(x, density, pressure, velocity_x, energy)))
+    #make 4 plots side by side
+    fig, axs = plt.subplots(1, 4,figsize=(20,5))
+    axs[0].plot(x,density)
+    axs[0].set_title('density')
+    axs[1].plot(x,pressure)
+    axs[1].set_title('pressure')
+    axs[2].plot(x,velocity_x)
+    axs[2].set_title('velocity_x')
+    axs[3].plot(x,energy)
+    axs[3].set_title('energy')
+    plt.show()
