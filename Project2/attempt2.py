@@ -86,18 +86,29 @@ def SPH(State_vector):
     #if a value of r is less than 1/h_vect in the same position, set it to 0
 
     k=2
-    r=np.where(abs(r)<=k*h_vect,r,0 )
-    print(r.shape)
-    print(h_vect.shape)
-    
+    r=np.where(np.abs(r)<=k*h_vect,r,0)
     #create a W matrix
     W_matrix=np.zeros((len(State_vector),len(State_vector)))
     #populate the W matrix using broadcasting
-    W_matrix=W(r,h_vect)
+    W_matrix=np.where(r!=0,W(r,h_vect),0)
+    W_deriv_matrix=np.zeros((len(State_vector),len(State_vector),3))
+    W_deriv_matrix=np.where(r!=0,W_gradient(r,h_vect),0)
+
+
     #set the diagonal to 0
     np.fill_diagonal(W_matrix,0)
+    np.fill_diagonal(W_deriv_matrix,0)
+    #print(W_matrix)
+    #plot the W matrix with 0 as balck and 1 as white
+
+    plt.imshow(W_matrix, cmap='gray')
+    plt.show()
+    plt.close()
+    #print(W_matrix)
+    plt.imshow(W_deriv_matrix, cmap='gray')
+    plt.show()
     
-    
+
     
 
 
