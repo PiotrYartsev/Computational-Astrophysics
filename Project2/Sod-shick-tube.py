@@ -83,13 +83,10 @@ def G_function(State_vector,t):
 
     W_value = np.zeros((400, 400))
     Delta_W_value = np.zeros((400, 400))
-    h_tes=[]
 
     for i in range(400):
         for j in range(400):
             h=(h_list[i]+h_list[j])/2
-            if h not in h_tes:
-                h_tes.append(h)
             if norm(dx[i, j])<=(k*(h)):
                 W_value[i, j] = W(dx[i,j], h)
                 #print(W_value[i, j])
@@ -106,15 +103,9 @@ def G_function(State_vector,t):
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
 
-    temp1 = pressure / (State_vector[:, 3]**2) + pressure[:, np.newaxis] / (State_vector[:, 3][:, np.newaxis]**2) + visc
-    temp2 = (State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value
 
-    State_vector_dir[:, 7] = 1/2 * np.sum(mass_of_particle * (temp1 * temp2), axis=1)
-    State_vector_dir[:, 4] = -np.sum(mass_of_particle * (temp1 * Delta_W_value), axis=1)
-    #State_vector_dir[:, 3] = np.sum(mass_of_particle * ((State_vector[:, 4] - State_vector[:, 4][:, np.newaxis]) * Delta_W_value), axis=1)
-    State_vector_dir[:,3]=0
-    State_vector[:,3]=np.sum(mass_of_particle * W_value, axis=1)
 
+    print(State_vector_dir[:, 4])
     
     return State_vector_dir, State_vector
 
@@ -128,7 +119,6 @@ t_end=h*40
 def RK4(State_vector,t,h,G_function):
     k1,State_vector=G_function(State_vector,t)
     #print(k1)
-
     k1=h*k1
     k2,State_vector=G_function(State_vector+0.5*k1,t+0.5*h)
     k2=h*k2
@@ -165,6 +155,8 @@ energy = result[:, :, 7]
 gamma = 1.4
 pressure = (gamma - 1) * density * energy
 velocity_x = result[:, :, 4]
+#print the first velocity
+print(velocity_x[0])
 
 lines = [ax.plot([], [])[0] for ax in axs]
 
@@ -200,8 +192,8 @@ def update(frame):
             axs[i].set_ylim([np.min(energy), np.max(energy)])
     return lines
 
-anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
+#anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
 
-plt.show()
+#plt.show()
 
 #"""
