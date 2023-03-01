@@ -114,34 +114,22 @@ def G_function(State_vector,t):
         der_density_i=0
         der_velocity_i=0
         der_energy_i=0
-        der_pressure_i=0
         for j in range(400):
             if i!=j and Delta_W_value[i,j]!=0:
-                der_pressure_i+=mass_of_particle*(velocity_i-State_vector[j,4])*Delta_W_value[i,j]
                 der_density_i+=mass_of_particle*(velocity_i-State_vector[j,4])*W_value[i,j]
-                der_velocity_i+=mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]+visc)*Delta_W_value[i,j]
-                der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
-        State_vector_dir[i:3] = der_pressure_i
-        State_vector_dir[i:3] = der_density_i
-        State_vector_dir[i:4] = der_velocity_i
-        State_vector_dir[i:7] = der_energy_i
-        """#density
-        State_vector_dir[i, 3] = np.sum(mass_of_particle *(velocity_i-State_vector[:,4])* W_value[i], axis=0)
-        #velocity
-        State_vector_dir[i, 4] = -np.sum(mass_of_particle * (pressure_i/density_i**2 + pressure/State_vector[:,3]+visc) * Delta_W_value[i], axis=0)
-        #energy
-        State_vector_dir[i,7]=1/2 * np.sum(mass_of_particle * (pressure_i/density_i**2 + pressure/State_vector[:,3]+visc) * (velocity_i-State_vector[:,4]) * Delta_W_value[i], axis=0)
-    """    
-
-
-    
+                der_velocity_i+=-mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
+                der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
+        State_vector_dir[i,3] = der_density_i
+        State_vector_dir[i,4] = der_velocity_i
+        State_vector_dir[i,7] = der_energy_i
+    #print(State_vector_dir[i:,7])
     return State_vector_dir
 
 # Set the initial conditions
 
 t=0
 h=0.005
-t_end=h*40
+t_end=h*5
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -180,6 +168,16 @@ gamma = 1.4
 pressure = (gamma - 1) * density * energy
 velocity_x = result[:, :, 4]
 
+for i in range(len(x)):
+    #sort the x values and sort the other values accordingly
+    index = np.argsort(x[i])
+    x[i] = x[i][index]
+    density[i] = density[i][index]
+    pressure[i] = pressure[i][index]
+    velocity_x[i] = velocity_x[i][index]
+    energy[i] = energy[i][index]
+
+
 
 lines = [ax.plot([], [])[0] for ax in axs]
 
@@ -187,26 +185,35 @@ def init():
     for line in lines:
         line.set_data([], [])
     axs[0].set_title('density')
+    axs[0].set_xlabel('x')
     axs[1].set_title('pressure')
+    axs[1].set_xlabel('x')
     axs[2].set_title('velocity_x')
+    axs[2].set_xlabel('x')
     axs[3].set_title('energy')
+    axs[3].set_xlabel('x')
     return lines
 
 def update(frame):
+    print(frame)
     for i, line in enumerate(lines):
         #order x and make averythign else follow the same order
         if i == 0:
             line.set_data(x[frame], density[frame])
-
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(density), np.max(density)])
         elif i == 1:
             line.set_data(x[frame], pressure[frame])
-
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(pressure), np.max(pressure)])
         elif i == 2:
             line.set_data(x[frame], velocity_x[frame])
-
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(velocity_x), np.max(velocity_x)])
         elif i == 3:
             line.set_data(x[frame], energy[frame])
-
+            axs[i].set_xlim([np.min(x), np.max(x)])
+            axs[i].set_ylim([np.min(energy), np.max(energy)])
     return lines
 
 anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
