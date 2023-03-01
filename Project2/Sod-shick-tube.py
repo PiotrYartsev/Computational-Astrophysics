@@ -69,14 +69,15 @@ def G_function(State_vector,t):
 
 
     #just use a defoult value
-    h_1=0.01878527*5
-    h_2=0.01878527
+    h_1=0.002
+    h_2=h_1*5
     
     h_list=[]
     for i in range(320):
         h_list.append(h_1)
     for i in range(320,400):
         h_list.append(h_2)
+    #print(h_list)
 
     k=2
     dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
@@ -87,14 +88,11 @@ def G_function(State_vector,t):
     for i in range(400):
         for j in range(400):
             h=(h_list[i]+h_list[j])/2
-            if norm(dx[i, j])<=(k*(h)):
+            if norm(dx[i, j])<=(k*(h)) and i!=j:
                 W_value[i, j] = W(dx[i,j], h)
-                #print(W_value[i, j])
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h)
-                #print(Delta_W_value[i, j])
-    
-    
 
+    
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
     State_vector_dir[:, 2] = State_vector[:, 6]
@@ -102,42 +100,50 @@ def G_function(State_vector,t):
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
+    for i in range(400):
+        #make pressure_i the same chape as the whole pressure array
+        pressure_i = pressure[i] * np.ones(400)
+        #same with dentsity
+        density_i = State_vector[i, 3] * np.ones(400)
+        #same for velocity
+        velocity_i = State_vector[i, 4] * np.ones(400)
+        #density
+        State_vector_dir[i, 3] = np.sum(mass_of_particle *(velocity_i-State_vector[:,4])* W_value[i], axis=0)
+        #velocity
+        State_vector_dir[i, 4] = -np.sum(mass_of_particle * (pressure_i/density_i**2 + pressure/State_vector[:,3]+visc) * Delta_W_value[i], axis=0)
+        #energy
+        State_vector_dir[i,7]=1/2 * np.sum(mass_of_particle * (pressure_i/density_i**2 + pressure/State_vector[:,3]+visc) * (velocity_i-State_vector[:,4]) * Delta_W_value[i], axis=0)
+        
 
 
-
-    print(State_vector_dir[:, 4])
     
-    return State_vector_dir, State_vector
+    return State_vector_dir
 
 # Set the initial conditions
 
 t=0
 h=0.005
-t_end=h*40
+t_end=h*2
 
 # Initialize the RK45 integrator
-def RK4(State_vector,t,h,G_function):
-    k1,State_vector=G_function(State_vector,t)
-    #print(k1)
-    k1=h*k1
-    k2,State_vector=G_function(State_vector+0.5*k1,t+0.5*h)
-    k2=h*k2
-    k3,State_vector=G_function(State_vector+0.5*k2,t+0.5*h)
-    k3=h*k3
-    k4,State_vector=G_function(State_vector+k3,t+h)
-    k4=h*k4
-    W_next=State_vector+(k1+2*k2+2*k3+k4)/6
+def RK4(State_vector, t, h, G_function):
+    k1 = G_function(State_vector, t)
+    k2 = G_function(State_vector + 0.5*h*k1, t + 0.5*h)
+    k3 = G_function(State_vector + 0.5*h*k2, t + 0.5*h)
+    k4 = G_function(State_vector + h*k3, t + h)
+    W_next = State_vector + (h/6.0)*(k1 + 2*k2 + 2*k3 + k4)
     return W_next
 
-# To store the results
-result = np.zeros((int((t_end - t) / h), 400, len(initial_conditions_x_less_or_equal_0) + 3))
 
+# To store the results
+result = np.zeros((int((t_end - t) / h)+1, 400, len(initial_conditions_x_less_or_equal_0) + 3))
+result[0]=State_vector
 # Iterate over time steps using tqdm to display a progress bar
 from tqdm import tqdm
 pbar = tqdm(total=int((t_end - t) / h))
 for i, t in enumerate(np.arange(t, t_end, h)):
     pbar.update(1)
-    result[i]=State_vector
+    result[i+1]=State_vector
     State_vector = RK4(State_vector, t, h, G_function)
 
 
@@ -155,8 +161,10 @@ energy = result[:, :, 7]
 gamma = 1.4
 pressure = (gamma - 1) * density * energy
 velocity_x = result[:, :, 4]
-#print the first velocity
-print(velocity_x[0])
+
+for i in range(len(x)):
+    #print largest and smallest x
+    print(np.max(x[i]), np.min(x[i]))
 
 lines = [ax.plot([], [])[0] for ax in axs]
 
@@ -172,8 +180,6 @@ def init():
 def update(frame):
     for i, line in enumerate(lines):
         #order x and make averythign else follow the same order
-
-
         if i == 0:
             line.set_data(x[frame], density[frame])
             axs[i].set_xlim([np.min(x), np.max(x)])
@@ -192,8 +198,8 @@ def update(frame):
             axs[i].set_ylim([np.min(energy), np.max(energy)])
     return lines
 
-#anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
+anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
 
-#plt.show()
+plt.show()
 
 #"""
