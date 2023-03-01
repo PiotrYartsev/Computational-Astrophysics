@@ -47,8 +47,11 @@ def W(dx,h):
 #derivative of the kernel function
 def W_derivat(dx,h):
     a_d=1/h
+    print("a_d",a_d)
     r=norm(dx)
+    print("r",r)
     R=r/h
+    print("R",R)
     if R<=1 and R>=0:
         return a_d * (-2 + 3/2 * R) * dx / h**2
     else:
