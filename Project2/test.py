@@ -8,7 +8,7 @@ import numpy
 numpy.set_printoptions(threshold=sys.maxsize)
 #set the initial conditions
 
-# density, velocity, pressure, eneergy, distance between particles
+# density, velocity x, velocity y, velocity z, energy
 initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
@@ -21,10 +21,11 @@ start=-0.6
 State_vector=[]
 for i in np.linspace(-0.6,0,320):
     State_vector.append((i, 0, 0, initial_conditions_x_less_or_equal_0[0], initial_conditions_x_less_or_equal_0[1], initial_conditions_x_less_or_equal_0[2], initial_conditions_x_less_or_equal_0[3], initial_conditions_x_less_or_equal_0[4]))
-for i in np.linspace(0+small_step,0.6+small_step,80):
+for i in np.linspace(0,0.6,80):
     State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
 State_vector=np.array(State_vector)
 x=State_vector[:,0]
+#print(x)
 print(State_vector.shape)
 print(State_vector[0])
 
@@ -102,6 +103,7 @@ def G_function(State_vector,t):
 
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    #print("pressure",pressure)
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
     for i in range(400):
         #make pressure_i the same chape as the whole pressure array
@@ -118,10 +120,20 @@ def G_function(State_vector,t):
             if i!=j and Delta_W_value[i,j]!=0:
                 der_density_i+=mass_of_particle*(velocity_i-State_vector[j,4])*W_value[i,j]
                 der_velocity_i+=-mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
+                """if i==0:
+                    print("pressure_i",pressure_i)
+                    print("density_i",density_i)
+                    print("pressure[j]",pressure[j])
+                    print("State_vector[j,3]",State_vector[j,3])
+                    print("visc",visc)
+                    print("W_value[i,j]",W_value[i,j])
+                    print("der_velocity_i",der_velocity_i)
+                    print("\n\n")"""
                 der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
         State_vector_dir[i,3] = der_density_i
         State_vector_dir[i,4] = der_velocity_i
         State_vector_dir[i,7] = der_energy_i
+        
     #print(State_vector_dir[i:,7])
     return State_vector_dir
 
@@ -195,7 +207,7 @@ def init():
     return lines
 
 def update(frame):
-    print(frame)
+    #print(frame)
     for i, line in enumerate(lines):
         #order x and make averythign else follow the same order
         if i == 0:
