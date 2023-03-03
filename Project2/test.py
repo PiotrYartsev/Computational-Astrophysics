@@ -84,7 +84,7 @@ def G_function(State_vector,t):
 
     #h-list
     #defoult values for right and left side
-    h_1=0.002
+    h_1=0.002*2.5
     h_2=h_1*5
     
     #create a list of h values
@@ -142,8 +142,7 @@ def G_function(State_vector,t):
     State_vector_dir[:, 2] = State_vector[:, 6]
 
     
-    #calculate the derivative of density, velocity and energy
-    ghost_particle=10
+    
     for i in range(number_of_particles):
         #calculate the pressure for the particle i
         pressure_i = pressure[i] 
@@ -166,19 +165,20 @@ def G_function(State_vector,t):
                 der_density_i+=mass_of_particle*(velocity_i-State_vector[j,4])*W_value[i,j]
 
                 #calculate the derivative of velocity
-                der_velocity_i+=mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
+                der_velocity_i+=-mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
 
                 #calculate the derivative of energy
                 der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
         
         #add the derivative of density, velocity and energy to the derivative state vector
         State_vector_dir[i,3] = der_density_i
-        State_vector_dir[i,4] = -der_velocity_i
+        State_vector_dir[i,4] = der_velocity_i
         State_vector_dir[i,7] = der_energy_i
     
     #set the ghost particles to 0
     ghost_particle = 10
     outside_ghost = (np.arange(number_of_particles) < ghost_particle) | (np.arange(number_of_particles) > (399 - ghost_particle))
+    State_vector_dir[outside_ghost, 0:3] = 0
     State_vector_dir[outside_ghost, 3:5] = 0
     State_vector_dir[outside_ghost, 7] = 0
         
@@ -187,7 +187,7 @@ def G_function(State_vector,t):
 # Set the initial conditions
 t=0
 h=0.005
-t_end=h*40
+t_end=h*10
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -205,7 +205,13 @@ result = np.zeros((int((t_end - t) / h)+1, number_of_particles, len(initial_cond
 # Set the initial conditions
 result[0]=State_vector
 
-# Irun the simulation and store the results
+
+
+
+
+
+
+# Run the simulation and store the results
 from tqdm import tqdm
 pbar = tqdm(total=int((t_end - t) / h))
 for i, t in enumerate(np.arange(t, t_end, h)):
@@ -284,3 +290,7 @@ anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=T
 plt.show()
 
 #"""
+
+#"""
+
+    
