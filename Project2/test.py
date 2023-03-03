@@ -25,6 +25,7 @@ for i in np.linspace(0,0.6,80):
     State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
 State_vector=np.array(State_vector)
 x=State_vector[:,0]
+number_of_particles=len(x)
 #print(x)
 print(State_vector.shape)
 print(State_vector[0])
@@ -79,95 +80,114 @@ def phi_func(h_ij,v_ij,x_ij):
 import time as time
 
 def G_function(State_vector,t):
-    State_vector_dir = np.zeros((400, len(initial_conditions_x_less_or_equal_0) + 3))
+    State_vector_dir = np.zeros((number_of_particles, len(initial_conditions_x_less_or_equal_0) + 3))
 
-
-    #just use a defoult value
+    #h-list
+    #defoult values for right and left side
     h_1=0.002
     h_2=h_1*5
     
+    #create a list of h values
     h_list=[]
+
+    #add the default values to the list
     for i in range(320):
         h_list.append(h_1)
-    for i in range(320,400):
+    for i in range(320,number_of_particles):
         h_list.append(h_2)
-    #print(h_list)
+
 
     k=2
+    #calculate the distance between the particles
     dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
+
+    #calculate the velocity between the particles
     dv=State_vector[:,4]-State_vector[:,4][:,np.newaxis]
 
-    W_value = np.zeros((400, 400))
-    Delta_W_value = np.zeros((400, 400))
-    visc=np.zeros((400,400))
+    #define the kernel function
+    W_value = np.zeros((number_of_particles, number_of_particles))
+
+    #define the derivative of the kernel function
+    Delta_W_value = np.zeros((number_of_particles, number_of_particles))
+
+    #define the viscosity function
+    #visc=np.zeros((number_of_particles,number_of_particles))
+
+    #define the pressure
     gamma = 1.4
     pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+
+    #define the seed of sound 
     seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
-    for i in range(400):
-        for j in range(400):
+
+    #calculate the kernel function and the derivative of the kernel function
+    for i in range(number_of_particles):
+        for j in range(number_of_particles):
             h_ij=(h_list[i]+h_list[j])/2
             c_ij=(seed_of_sound[i]+seed_of_sound[j])/2
             if i!=j:
                 if norm(dx[i, j])<=(k*(h_ij)):
                     W_value[i, j] = W(dx[i,j], h_ij)
                     Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
-
                 """if dx[i,j]*dv[i,j]<0:
                     phi=phi_func(h_ij,dv[i,j],dx[i,j])
                     visc[i,j]=vesc_func(c_ij,State_vector[i,3],phi)
                 #"""
 
     visc=0
+
+    #calculte the derivative of poition as the velocity
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
     State_vector_dir[:, 2] = State_vector[:, 6]
 
     
-    #print("pressure",pressure)
-    
-    for i in range(400):
-        #make pressure_i the same chape as the whole pressure array
+    #calculate the derivative of density, velocity and energy
+    ghost_particle=10
+    for i in range(number_of_particles):
+        #calculate the pressure for the particle i
         pressure_i = pressure[i] 
         #same with dentsity
         density_i = State_vector[i, 3] 
         #same for velocity
         velocity_i = State_vector[i, 4] 
         
+        #define the derivative of density, velocity and energy starting with 0
         der_density_i=0
         der_velocity_i=0
         der_energy_i=0
 
-        for j in range(400):
+        #calculate the sums used for the derivative of density, velocity and energy
+        for j in range(number_of_particles):
+            #calculate the pressure for the particle j if condition is true
             if i!=j and Delta_W_value[i,j]!=0:
-                
+
+                #calculate the derivative of density
                 der_density_i+=mass_of_particle*(velocity_i-State_vector[j,4])*W_value[i,j]
-                der_velocity_i+=-mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
-                """if i==0:
-                    print("position_i",State_vector[i,0])
-                    print("position_j",State_vector[j,0])
-                    print("pressure_i",pressure_i)
-                    print("pressure[j]",pressure[j])
-                    print("density_i",density_i)
-                    print("density[j]",State_vector[j,3])
-                    print("State_vector[j,3]",State_vector[j,3])
-                    print("visc",visc)
-                    print("W_value[i,j]",W_value[i,j])
-                    print("der_velocity_i",der_velocity_i)
-                    print("\n\n")
-                #"""
+
+                #calculate the derivative of velocity
+                der_velocity_i+=mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
+
+                #calculate the derivative of energy
                 der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
-        State_vector_dir[i,3] = der_density_i
-        State_vector_dir[i,4] = der_velocity_i
-        State_vector_dir[i,7] = der_energy_i
         
-    #print(State_vector_dir[i:,7])
+        #add the derivative of density, velocity and energy to the derivative state vector
+        State_vector_dir[i,3] = der_density_i
+        State_vector_dir[i,4] = -der_velocity_i
+        State_vector_dir[i,7] = der_energy_i
+    
+    #set the ghost particles to 0
+    ghost_particle = 10
+    outside_ghost = (np.arange(number_of_particles) < ghost_particle) | (np.arange(number_of_particles) > (399 - ghost_particle))
+    State_vector_dir[outside_ghost, 3:5] = 0
+    State_vector_dir[outside_ghost, 7] = 0
+        
     return State_vector_dir
 
 # Set the initial conditions
-
 t=0
 h=0.005
-t_end=h*10
+t_end=h*40
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -180,9 +200,12 @@ def RK4(State_vector, t, h, G_function):
 
 
 # To store the results
-result = np.zeros((int((t_end - t) / h)+1, 400, len(initial_conditions_x_less_or_equal_0) + 3))
+result = np.zeros((int((t_end - t) / h)+1, number_of_particles, len(initial_conditions_x_less_or_equal_0) + 3))
+
+# Set the initial conditions
 result[0]=State_vector
-# Iterate over time steps using tqdm to display a progress bar
+
+# Irun the simulation and store the results
 from tqdm import tqdm
 pbar = tqdm(total=int((t_end - t) / h))
 for i, t in enumerate(np.arange(t, t_end, h)):
@@ -196,7 +219,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-
+#plot the results of the simulation
 fig, axs = plt.subplots(1, 4, figsize=(20, 5))
 
 x = result[:, :, 0]
@@ -206,19 +229,36 @@ gamma = 1.4
 pressure = (gamma - 1) * density * energy
 velocity_x = result[:, :, 4]
 
-scatters = [ax.scatter([], [],s=10) for ax in axs]
+scatters = [ax.scatter([], [],s=5) for ax in axs]
 
 def init():
     for scatter in scatters:
         scatter.set_offsets(np.empty((0, 2))) # use empty 2D array
     axs[0].set_title('density')
     axs[0].set_xlabel('x')
+    axs[0].set_xlim([np.min(x), np.max(x)])
+    #axs[0].set_ylim([np.min(density), np.max(density)])
+    #make the y_lim a bit bigger than the max and min
+    axs[0].set_ylim([np.min(density)-0.1, np.max(density)+0.1])
     axs[1].set_title('pressure')
     axs[1].set_xlabel('x')
+    axs[1].set_xlim([np.min(x), np.max(x)])
+    #axs[1].set_ylim([np.min(pressure), np.max(pressure)])
+    axs[1].set_ylim([np.min(pressure)-0.1, np.max(pressure)+0.1])
+
     axs[2].set_title('velocity_x')
     axs[2].set_xlabel('x')
+    axs[2].set_xlim([np.min(x), np.max(x)])
+    #axs[2].set_ylim([np.min(velocity_x), np.max(velocity_x)])
+    axs[2].set_ylim([np.min(velocity_x)-0.1, np.max(velocity_x)+0.1])
+
+
     axs[3].set_title('energy')
     axs[3].set_xlabel('x')
+    axs[3].set_xlim([np.min(x), np.max(x)])
+    #axs[3].set_ylim([np.min(energy), np.max(energy)])
+    axs[3].set_ylim([np.min(energy)-0.1, np.max(energy)+0.1])
+
     return scatters
 
 def update(frame):
@@ -236,8 +276,7 @@ def update(frame):
         data = np.column_stack((x_data, y_data))
         scatter.set_offsets(data)
         
-        axs[i].set_xlim([np.min(x), np.max(x)])
-        axs[i].set_ylim([np.min(y_data), np.max(y_data)])
+        
     return scatters
 
 anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
