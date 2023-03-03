@@ -57,6 +57,16 @@ def W_derivat(dx,h):
         return a_d * (-2 + 3/2 * R) * dx / h**2
     else:
         return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
+    
+def vesc_func(c_ij,density_ij,phi_ij):
+    alpha=1
+    beta=1
+    return (-alpha*c_ij*phi_ij+beta*phi_ij*phi_ij)/(density_ij)
+
+def phi_func(h_ij,v_ij,x_ij):
+    varphi=0.1*h_ij
+    return (h_ij*v_ij*x_ij)/(abs(x_ij)**2+varphi**2)
+
 
 #position in x direction 0
 #position in y direction 1
@@ -85,26 +95,36 @@ def G_function(State_vector,t):
 
     k=2
     dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
+    dv=State_vector[:,4]-State_vector[:,4][:,np.newaxis]
 
     W_value = np.zeros((400, 400))
     Delta_W_value = np.zeros((400, 400))
-
+    visc=np.zeros((400,400))
+    gamma = 1.4
+    pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
     for i in range(400):
         for j in range(400):
-            h=(h_list[i]+h_list[j])/2
-            if norm(dx[i, j])<=(k*(h)) and i!=j:
-                W_value[i, j] = W(dx[i,j], h)
-                Delta_W_value[i, j] = W_derivat(dx[i, j], h)
+            h_ij=(h_list[i]+h_list[j])/2
+            c_ij=(seed_of_sound[i]+seed_of_sound[j])/2
+            if i!=j:
+                if norm(dx[i, j])<=(k*(h_ij)):
+                    W_value[i, j] = W(dx[i,j], h_ij)
+                    Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
 
-    
+                """if dx[i,j]*dv[i,j]<0:
+                    phi=phi_func(h_ij,dv[i,j],dx[i,j])
+                    visc[i,j]=vesc_func(c_ij,State_vector[i,3],phi)
+                #"""
+
+    visc=0
     State_vector_dir[:, 0] = State_vector[:, 4]
     State_vector_dir[:, 1] = State_vector[:, 5]
     State_vector_dir[:, 2] = State_vector[:, 6]
 
-    gamma = 1.4
-    pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    
     #print("pressure",pressure)
-    seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
+    
     for i in range(400):
         #make pressure_i the same chape as the whole pressure array
         pressure_i = pressure[i] 
@@ -116,19 +136,25 @@ def G_function(State_vector,t):
         der_density_i=0
         der_velocity_i=0
         der_energy_i=0
+
         for j in range(400):
             if i!=j and Delta_W_value[i,j]!=0:
+                
                 der_density_i+=mass_of_particle*(velocity_i-State_vector[j,4])*W_value[i,j]
                 der_velocity_i+=-mass_of_particle*(pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc)*Delta_W_value[i,j]
                 """if i==0:
+                    print("position_i",State_vector[i,0])
+                    print("position_j",State_vector[j,0])
                     print("pressure_i",pressure_i)
-                    print("density_i",density_i)
                     print("pressure[j]",pressure[j])
+                    print("density_i",density_i)
+                    print("density[j]",State_vector[j,3])
                     print("State_vector[j,3]",State_vector[j,3])
                     print("visc",visc)
                     print("W_value[i,j]",W_value[i,j])
                     print("der_velocity_i",der_velocity_i)
-                    print("\n\n")"""
+                    print("\n\n")
+                #"""
                 der_energy_i+=1/2 * mass_of_particle * (pressure_i/density_i**2 + pressure[j]/State_vector[j,3]**2+visc) * (velocity_i-State_vector[j,4]) * Delta_W_value[i,j]
         State_vector_dir[i,3] = der_density_i
         State_vector_dir[i,4] = der_velocity_i
@@ -141,7 +167,7 @@ def G_function(State_vector,t):
 
 t=0
 h=0.005
-t_end=h*5
+t_end=h*10
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -180,22 +206,11 @@ gamma = 1.4
 pressure = (gamma - 1) * density * energy
 velocity_x = result[:, :, 4]
 
-for i in range(len(x)):
-    #sort the x values and sort the other values accordingly
-    index = np.argsort(x[i])
-    x[i] = x[i][index]
-    density[i] = density[i][index]
-    pressure[i] = pressure[i][index]
-    velocity_x[i] = velocity_x[i][index]
-    energy[i] = energy[i][index]
-
-
-
-lines = [ax.plot([], [])[0] for ax in axs]
+scatters = [ax.scatter([], [],s=10) for ax in axs]
 
 def init():
-    for line in lines:
-        line.set_data([], [])
+    for scatter in scatters:
+        scatter.set_offsets(np.empty((0, 2))) # use empty 2D array
     axs[0].set_title('density')
     axs[0].set_xlabel('x')
     axs[1].set_title('pressure')
@@ -204,29 +219,26 @@ def init():
     axs[2].set_xlabel('x')
     axs[3].set_title('energy')
     axs[3].set_xlabel('x')
-    return lines
+    return scatters
 
 def update(frame):
-    #print(frame)
-    for i, line in enumerate(lines):
-        #order x and make averythign else follow the same order
+    for i, scatter in enumerate(scatters):
+        x_data = x[frame]
+        y_data = None
         if i == 0:
-            line.set_data(x[frame], density[frame])
-            axs[i].set_xlim([np.min(x), np.max(x)])
-            axs[i].set_ylim([np.min(density), np.max(density)])
+            y_data = density[frame]
         elif i == 1:
-            line.set_data(x[frame], pressure[frame])
-            axs[i].set_xlim([np.min(x), np.max(x)])
-            axs[i].set_ylim([np.min(pressure), np.max(pressure)])
+            y_data = pressure[frame]
         elif i == 2:
-            line.set_data(x[frame], velocity_x[frame])
-            axs[i].set_xlim([np.min(x), np.max(x)])
-            axs[i].set_ylim([np.min(velocity_x), np.max(velocity_x)])
+            y_data = velocity_x[frame]
         elif i == 3:
-            line.set_data(x[frame], energy[frame])
-            axs[i].set_xlim([np.min(x), np.max(x)])
-            axs[i].set_ylim([np.min(energy), np.max(energy)])
-    return lines
+            y_data = energy[frame]
+        data = np.column_stack((x_data, y_data))
+        scatter.set_offsets(data)
+        
+        axs[i].set_xlim([np.min(x), np.max(x)])
+        axs[i].set_ylim([np.min(y_data), np.max(y_data)])
+    return scatters
 
 anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
 
