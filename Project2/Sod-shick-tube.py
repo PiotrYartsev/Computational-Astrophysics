@@ -51,7 +51,7 @@ def W_derivat(dx,h):
     r=norm(dx)
     print("r",r)
     R=r/h
-    print("R",R)
+    
     if R<=1 and R>=0:
         return a_d * (-2 + 3/2 * R) * dx / h**2
     else:
