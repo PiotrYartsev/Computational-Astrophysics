@@ -21,7 +21,7 @@ start=-0.6
 State_vector=[]
 for i in np.linspace(-0.6,0,320):
     State_vector.append((i, 0, 0, initial_conditions_x_less_or_equal_0[0], initial_conditions_x_less_or_equal_0[1], initial_conditions_x_less_or_equal_0[2], initial_conditions_x_less_or_equal_0[3], initial_conditions_x_less_or_equal_0[4]))
-for i in np.linspace(0,0.6,80):
+for i in np.linspace(0+small_step,0.6,80):
     State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
 State_vector=np.array(State_vector)
 x=State_vector[:,0]
@@ -81,12 +81,33 @@ import time as time
 
 def G_function(State_vector,t):
     State_vector_dir = np.zeros((number_of_particles, len(initial_conditions_x_less_or_equal_0) + 3))
+    x_values=State_vector[:,0]
+    y_values=State_vector[:,1]
+    z_values=State_vector[:,2]
+    density=State_vector[:,3]
+    velocity_x=State_vector[:,4]
+    velocity_y=State_vector[:,5]
+    velocity_z=State_vector[:,6]
+    energy=State_vector[:,7]
+
+
+    Derivative_x_values=State_vector_dir[:,0]
+    Derivative_y_values=State_vector_dir[:,1]
+    Derivative_z_values=State_vector_dir[:,2]
+    Derivative_density=State_vector_dir[:,3]
+    Derivative_velocity_x=State_vector_dir[:,4]
+    Derivative_velocity_y=State_vector_dir[:,5]
+    Derivative_velocity_z=State_vector_dir[:,6]
+    Derivative_energy=State_vector_dir[:,7]
 
     #h-list
     #defoult values for right and left side
     h_1=0.002*2.5
     h_2=h_1*5
     
+    
+    h_1=0.006
+    h_2=0.006
     #create a list of h values
     h_list=[]
 
@@ -99,10 +120,10 @@ def G_function(State_vector,t):
 
     k=2
     #calculate the distance between the particles
-    dx = State_vector[:, 0] - State_vector[:, 0][:, np.newaxis]
-
+    dx = x_values - x_values[:, np.newaxis]
+ 
     #calculate the velocity between the particles
-    dv=State_vector[:,4]-State_vector[:,4][:,np.newaxis]
+    dv=velocity_x-velocity_x[:,np.newaxis]
 
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
@@ -111,69 +132,104 @@ def G_function(State_vector,t):
     Delta_W_value = np.zeros((number_of_particles, number_of_particles))
 
     #define the viscosity function
-    #visc=np.zeros((number_of_particles,number_of_particles))
+    visc=np.zeros((number_of_particles,number_of_particles))
 
     #define the pressure
     gamma = 1.4
-    pressure = (gamma - 1) * State_vector[:, 3] * State_vector[:, 7]
+    #print("pressure",pressure)
 
     #define the seed of sound 
-    seed_of_sound = np.sqrt((gamma - 1) * State_vector[:, 7])
+    seed_of_sound = np.sqrt((gamma - 1)*energy)
 
     #calculate the kernel function and the derivative of the kernel function
     for i in range(number_of_particles):
         for j in range(number_of_particles):
             h_ij=(h_list[i]+h_list[j])/2
             c_ij=(seed_of_sound[i]+seed_of_sound[j])/2
-            if i!=j:
-                if norm(dx[i, j])<=(k*(h_ij)):
-                    W_value[i, j] = W(dx[i,j], h_ij)
-                    Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
-                """if dx[i,j]*dv[i,j]<0:
-                    phi=phi_func(h_ij,dv[i,j],dx[i,j])
-                    visc[i,j]=vesc_func(c_ij,State_vector[i,3],phi)
-                #"""
+            if norm(dx[i, j])<=(k*(h_ij)):
+                W_value[i, j] = W(dx[i,j], h_ij)
+                Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
+            if dx[i,j]*dv[i,j]<0:
+                phi=phi_func(h_ij,dv[i,j],dx[i,j])
+                visc[i,j]=vesc_func(c_ij,State_vector[i,3],phi)
+            #"""
+    
+    for i in range(number_of_particles):
+        density[i]=mass_of_particle*np.sum(W_value[i,:])
+        Derivative_density = 0
+    #print(State_vector[:,3])
 
-    visc=0
+
+    pressure = (gamma - 1) * density * energy
+    #print("pressure",pressure)
+    #visc=0
 
     #calculte the derivative of poition as the velocity
-    State_vector_dir[:, 0] = State_vector[:, 4]
-    State_vector_dir[:, 1] = State_vector[:, 5]
-    State_vector_dir[:, 2] = State_vector[:, 6]
+    Derivative_x_values = velocity_x
+    Derivative_y_values = velocity_y
+    Derivative_z_values = velocity_z
 
-    
-    # calculate the derivative of density, velocity and energy
+    #density
     for i in range(number_of_particles):
-        # calculate the pressure for the particle i
-        pressure_i = pressure[i]
-        
-        # calculate the density for the particle i
-        density_i = State_vector[i, 3]
-        
-        # calculate the velocity for the particle i
-        velocity_i = State_vector[i, 4]
-        
-        # calculate the sums used for the derivative of density, velocity and energy
-        der_density_i = mass_of_particle * np.sum((velocity_i - State_vector[:, 4]) * Delta_W_value[i, :])
-        
-        der_velocity_i = -mass_of_particle * np.sum((pressure_i / density_i ** 2 + pressure / State_vector[:, 3] ** 2 + visc) * Delta_W_value[i, :])
-        
-        der_energy_i = 1/2 * mass_of_particle * np.sum((pressure_i / density_i ** 2 + pressure / State_vector[:, 3] ** 2 + visc) * (velocity_i - State_vector[:, 4]) * Delta_W_value[i, :])
-        
-        # set the derivative of density, velocity and energy in State_vector_dir
-        State_vector_dir[i, 3] = der_density_i
-        State_vector_dir[i, 4] = der_velocity_i
-        State_vector_dir[i, 7] = der_energy_i
-    
-    #set the ghost particles to 0
-    ghost_particle = 10
-    outside_ghost = (np.arange(number_of_particles) < ghost_particle) | (np.arange(number_of_particles) > (399 - ghost_particle))
-    State_vector_dir[outside_ghost, 0:3] = 0
-    State_vector_dir[outside_ghost, 3:5] = 0
-    State_vector_dir[outside_ghost, 7] = 0
-        
-    return State_vector_dir
+        #define the derivative of density, velocity and energy starting with         
 
+        der_velocity_i=0
+        der_energy_i=0
+
+        #calculate the sums used for the derivative of velocity and energy
+        for j in range(number_of_particles):
+            #calculate the pressure for the particle j if condition is true
+            if Delta_W_value[i,j]!=0:
+
+                #calculate the derivative of velocity
+                der_velocity_i+= (-1)*mass_of_particle*(pressure[i]/density[i]**2 + pressure[j]/density[i]**2+visc[i,j])*Delta_W_value[i,j]
+
+                #calculate the derivative of energy
+                der_energy_i+= 1/2 * mass_of_particle * (pressure[i] /density[i]**2 + pressure[j]/density[i]**2+visc[i,j]) * (velocity_x[i] -velocity_x[i]) * Delta_W_value[i,j]
+
+        if der_energy_i<0:
+            print("negative energy",der_energy_i)
+            der_energy_i=0
+        
+        #add the  velocity and energy to the derivative state vector
+        Derivative_velocity_x[i] = der_velocity_i
+        Derivative_energy[i] = der_energy_i
+    
+    #set the values to 0 for particles within 10 of the walls
+    """
+    fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+    axs[0].plot(x_values, density, 'o')
+    axs[0].set_title('density')
+    axs[1].plot(x_values, pressure, 'o')
+    axs[1].set_title('pressure')
+    axs[2].plot(x_values, Derivative_velocity_x, 'o')
+    axs[2].set_title('der_velocity')
+    axs[3].plot(x_values, Derivative_energy, 'o')
+    axs[3].set_title('der_energy')
+    plt.show()
+    """
+    
+
+    State_vector_dir[:,0]=Derivative_x_values
+    State_vector_dir[:,1]=Derivative_y_values
+    State_vector_dir[:,2]=Derivative_z_values
+    State_vector_dir[:,3]=Derivative_density
+    State_vector_dir[:,4]=Derivative_velocity_x
+    State_vector_dir[:,5]=Derivative_velocity_y
+    State_vector_dir[:,6]=Derivative_velocity_z
+    State_vector_dir[:,7]=Derivative_energy
+
+    State_vector[:,0]=x_values
+    State_vector[:,1]=y_values
+    State_vector[:,2]=z_values
+    State_vector[:,3]=density
+    State_vector[:,4]=velocity_x
+    State_vector[:,5]=velocity_y
+    State_vector[:,6]=velocity_z
+    State_vector[:,7]=energy
+
+
+    return State_vector_dir
 # Set the initial conditions
 t=0
 h=0.005
@@ -182,10 +238,12 @@ t_end=h*40
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
     k1 = G_function(State_vector, t)
-    k2 = G_function(State_vector + 0.5*h*k1, t + 0.5*h)
+    k2= G_function(State_vector + 0.5*h*k1, t + 0.5*h)
     k3 = G_function(State_vector + 0.5*h*k2, t + 0.5*h)
-    k4 = G_function(State_vector + h*k3, t + h)
+    k4= G_function(State_vector + h*k3, t + h)
+    #State_vector[:,3]=density
     W_next = State_vector + (h/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+    #W_next[:,3]=density
     return W_next
 
 
@@ -280,3 +338,7 @@ anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=T
 plt.show()
 
 #"""
+
+#"""
+
+    
