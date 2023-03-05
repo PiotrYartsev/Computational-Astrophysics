@@ -5,6 +5,11 @@ import numpy as np
 from numpy.linalg import norm 
 import sys
 import numpy
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.animation import FuncAnimation
 numpy.set_printoptions(threshold=sys.maxsize)
 #set the initial conditions
 
@@ -13,6 +18,14 @@ initial_conditions_x_less_or_equal_0=[1,0,0,0,2.5]
 initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
 mass_of_particle=0.001875
+
+
+domain=[-0.6,0.6]
+number_of_ghost_particles=10
+positional_domain=[10,410]
+
+
+
 
 #Populate the x axis
 small_step=0.6/80
@@ -95,22 +108,16 @@ def G_function(State_vector,t):
     h_1=0.002*2.5
     h_2=h_1*5
     
-    """
-    h_1=0.006
-    h_2=0.006
-    """
-    #create a list of h values
-    h_list=[]
+    #create a array of h values with length of the number of particles
+    h_list=np.zeros(number_of_particles)
 
-    #add the default values to the list
-    for i in range(320):
-        h_list.append(h_1)
-    for i in range(320,number_of_particles):
-        h_list.append(h_2)
+    #set the h values for the left and right side using broadcasting
+    h_list[x_values<=0]=h_1
+    h_list[x_values>0]=h_2
 
     #calculate the distance between the particles
-    dx = x_values - x_values[:, np.newaxis]
-
+    dx= x_values[:, np.newaxis] - x_values
+    
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
 
@@ -126,12 +133,9 @@ def G_function(State_vector,t):
                 W_value[i, j] = W(dx[i,j], h_ij)
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
 
-    
-    for i in range(number_of_particles):
-        density[i]=mass_of_particle*np.sum(W_value[i,:])
-        Derivative_density = 0
 
 
+    density=np.sum(mass_of_particle*W_value,axis=1)
     gamma = 1.4
     pressure = (gamma - 1) * density * energy
 
@@ -144,65 +148,151 @@ def G_function(State_vector,t):
 
     #density
     for i in range(number_of_particles):
-        #define the derivative of density, velocity and energy starting with         
+        #make a list of density_i the same length as the number of particles
+        density_i=density[i]*np.ones(number_of_particles)
+        #same for pressure
+        pressure_i=pressure[i]*np.ones(number_of_particles)
+        #same for velocity
+        velocity_y_i=velocity_y[i]*np.ones(number_of_particles)
+        velocity_x_i=velocity_x[i]*np.ones(number_of_particles)
+        velocity_z_i=velocity_z[i]*np.ones(number_of_particles)
 
-        der_velocity_i=0
-        der_energy_i=0
+        #calculate the derivative of the velocity
+        Derivative_velocity_x[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc)*Delta_W_value[i,:])
+        Derivative_velocity_y[i]=0
+        Derivative_velocity_z[i]=0
 
-        #calculate the sums used for the derivative of velocity and energy
-        for j in range(number_of_particles):
-            #calculate the pressure for the particle j if condition is true
-            if Delta_W_value[i,j]!=0:
-
-                #calculate the derivative of velocity
-                der_velocity_i+= (-1)*mass_of_particle*(pressure[i]/density[i]**2 + pressure[j]/density[i]**2+visc)*Delta_W_value[i,j]
-
-                #calculate the derivative of energy
-                der_energy_i+= 1/2 * mass_of_particle * (pressure[i] /density[i]**2 + pressure[j]/density[i]**2+visc) * (velocity_x[i] -velocity_x[i]) * Delta_W_value[i,j]
-
-        if der_energy_i<0:
-            print("negative energy",der_energy_i)
-            der_energy_i=0
-        
-        #add the  velocity and energy to the derivative state vector
-        Derivative_velocity_x[i] = der_velocity_i
-        Derivative_energy[i] = der_energy_i
-    
-    #set the values to 0 for particles within 10 of the walls
-    """
-    fig, axs = plt.subplots(1, 4, figsize=(20, 5))
-    axs[0].plot(x_values, density, 'o')
-    axs[0].set_title('density')
-    axs[1].plot(x_values, pressure, 'o')
-    axs[1].set_title('pressure')
-    axs[2].plot(x_values, Derivative_velocity_x, 'o')
-    axs[2].set_title('der_velocity')
-    axs[3].plot(x_values, Derivative_energy, 'o')
-    axs[3].set_title('der_energy')
-    plt.show()
-    """
+        #calculate the derivative of the energy
+        Derivative_energy[i]=np.sum((1/2)*mass_of_particle*(pressure_i/density_i**2 +pressure/density**2 + visc)*(velocity_x_i-velocity_x)*Delta_W_value[i,:])
+        if Derivative_energy[i]<0:
+            Derivative_energy[i]=0
 
     State_vector_dir[:,0]=Derivative_x_values
     State_vector_dir[:,1]=Derivative_y_values
     State_vector_dir[:,2]=Derivative_z_values
-    State_vector_dir[:,3]=Derivative_density
+    State_vector_dir[:,3]=0
     State_vector_dir[:,4]=Derivative_velocity_x
     State_vector_dir[:,5]=Derivative_velocity_y
     State_vector_dir[:,6]=Derivative_velocity_z
     State_vector_dir[:,7]=Derivative_energy
 
-    State_vector[:,0]=x_values
-    State_vector[:,1]=y_values
-    State_vector[:,2]=z_values
     State_vector[:,3]=density
-    State_vector[:,4]=velocity_x
-    State_vector[:,5]=velocity_y
-    State_vector[:,6]=velocity_z
-    State_vector[:,7]=energy
+
+    return State_vector_dir
+
+# Set the initial conditions
+t=0
+h=0.005
+t_end=h*40
+
+# Initialize the RK45 integrator
+def RK4(State_vector, t, h, G_function):
+    f1 = G_function(State_vector, t)
+    f2= G_function(State_vector + f1*h/2, t + h/2)
+    f3= G_function(State_vector + f2*h/2, t + h/2)
+    f4= G_function(State_vector + f3*h, t + h)
+    W_next = State_vector + h*(f1 + 2*f2 + 2*f3 + f4)/6
+    return W_next
 
 
-    return State_vector_dir,W_value,Delta_W_value
+# To store the results
+result = np.zeros((int((t_end - t) / h)+1, number_of_particles, len(initial_conditions_x_less_or_equal_0) + 3))
 
-State_vector_dir,W_value,Delta_W_value=G_function(State_vector, 0)
+# Set the initial conditions
+result[0]=State_vector
 
-    
+# Run the simulation and store the results
+from tqdm import tqdm
+pbar = tqdm(total=int((t_end - t) / h))
+for i, t in enumerate(np.arange(t, t_end, h)):
+    pbar.update(1)
+    result[i+1]=State_vector
+    State_vector = RK4(State_vector, t, h, G_function)
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+#plot the results of the simulation
+fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+
+x = result[:, :, 0]
+y = result[:, :, 1]
+z = result[:, :, 2]
+density = result[:, :, 3]
+velocity_x = result[:, :, 4]
+velocity_y = result[:, :, 5]
+velocity_z = result[:, :, 6]
+energy = result[:, :, 7]
+
+gamma = 1.4
+pressure = (gamma - 1) * density * energy
+
+
+scatters = [ax.scatter([], [],s=5) for ax in axs]
+
+def init():
+    for scatter in scatters:
+        scatter.set_offsets(np.empty((0, 2))) # use empty 2D array
+
+    #set title for entire figure
+    fig.suptitle('1D SPH simulation', fontsize=16)
+    axs[0].set_title('Density')
+    axs[0].set_xlabel('x')
+    axs[0].set_ylabel('Density (Kg/m^3)')
+    axs[0].set_xlim([np.min(x), np.max(x)])
+    axs[0].set_ylim([np.min(density)-0.1, np.max(density)+0.1])
+
+    axs[1].set_title('Pressure')
+    axs[1].set_xlabel('x')
+    axs[1].set_ylabel('Pressure (N/m^3)')
+    axs[1].set_xlim([np.min(x), np.max(x)])
+    #axs[1].set_ylim([np.min(pressure), np.max(pressure)])
+    axs[1].set_ylim([np.min(pressure)-0.1, np.max(pressure)+0.1])
+
+    axs[2].set_title('velocity(x)')
+    axs[2].set_xlabel('x')
+    axs[2].set_ylabel('Velocity(x) (m/s)')
+    axs[2].set_xlim([np.min(x), np.max(x)])
+    #axs[2].set_ylim([np.min(velocity_x), np.max(velocity_x)])
+    axs[2].set_ylim([np.min(velocity_x)-0.1, np.max(velocity_x)+0.1])
+
+
+    axs[3].set_title('Internal energy')
+    axs[3].set_xlabel('x')
+    axs[3].set_ylabel('Internal energy (J/Kg)')
+    axs[3].set_xlim([np.min(x), np.max(x)])
+    #axs[3].set_ylim([np.min(energy), np.max(energy)])
+    axs[3].set_ylim([np.min(energy)-0.1, np.max(energy)+0.1])
+
+    return scatters
+
+def update(frame):
+    for i, scatter in enumerate(scatters):
+        x_data = x[frame]
+        y_data = None
+        if i == 0:
+            y_data = density[frame]
+        elif i == 1:
+            y_data = pressure[frame]
+        elif i == 2:
+            y_data = velocity_x[frame]
+        elif i == 3:
+            y_data = energy[frame]
+        data = np.column_stack((x_data, y_data))
+        scatter.set_offsets(data)
+    return scatters
+
+#anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
+
+#animate at half the speed
+anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True, interval=100)
+writer=animation.FFMpegWriter(fps=3,extra_args=['-vcodec', 'libx264'])
+anim.save('no_visc.mp4',writer=writer)
+
+plt.close()
+
+plt.show()
+#"""

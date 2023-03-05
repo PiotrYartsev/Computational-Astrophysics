@@ -61,7 +61,15 @@ def W_derivat(dx,h):
     else:
         return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
     
-
+#vescocity
+def vesc(h_ij,c_ij,x_ij,v_ij,density_ij):
+    alpha=1
+    beta=1
+    phi=0.1*h_ij
+    theta_ij=(h_ij*v_ij*x_ij)/(norm(x_ij)**2+phi**2)
+    result=(-alpha*c_ij*theta_ij+beta*theta_ij**2)/(density_ij)
+    return result
+    
 
 #position in x direction 0
 #position in y direction 1
@@ -100,22 +108,17 @@ def G_function(State_vector,t):
     h_1=0.002*2.5
     h_2=h_1*5
     
-    """
-    h_1=0.006
-    h_2=0.006
-    """
-    #create a list of h values
-    h_list=[]
+    #create a array of h values with length of the number of particles
+    h_list=np.zeros(number_of_particles)
 
-    #add the default values to the list
-    for i in range(320):
-        h_list.append(h_1)
-    for i in range(320,number_of_particles):
-        h_list.append(h_2)
+    #set the h values for the left and right side using broadcasting
+    h_list[x_values<=0]=h_1
+    h_list[x_values>0]=h_2
 
     #calculate the distance between the particles
     dx= x_values[:, np.newaxis] - x_values
-    
+    dv= velocity_x[:, np.newaxis] - velocity_x
+
 
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
@@ -132,22 +135,24 @@ def G_function(State_vector,t):
                 W_value[i, j] = W(dx[i,j], h_ij)
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
 
-    
-    for i in range(number_of_particles):
-        density[i]=np.sum(mass_of_particle*W_value[i,:])
-
-
+    density=np.sum(mass_of_particle*W_value,axis=1)
     gamma = 1.4
-    pressure = np.zeros(number_of_particles)
-    """
-    for i in range(number_of_particles):
-        pressure[i] = (gamma - 1) * density[i] * energy[i]
-    """
     pressure = (gamma - 1) * density * energy
 
-    
+    #calculate the speed of sound
+    c=np.sqrt((gamma-1)*energy)
 
-    visc=0
+    visc=np.zeros((number_of_particles, number_of_particles))
+    for i in range(number_of_particles):
+        for j in range(number_of_particles):
+            h_ij=(h_list[i]+h_list[j])/2
+            c_ij=(c[i]+c[j])/2
+            density_ij=(density[i]+density[j])/2
+            x_ij=dx[i,j]
+            v_ij=dv[i,j]
+            if v_ij*x_ij<0:
+                visc[i,j]=vesc(h_ij,c_ij,x_ij,v_ij,density_ij)
+    #print(visc)
 
     #calculte the derivative of poition as the velocity
     Derivative_x_values = velocity_x
@@ -156,25 +161,24 @@ def G_function(State_vector,t):
 
     #density
     for i in range(number_of_particles):
-        #define the derivative of density, velocity and energy starting with         
-        der_velocity_i=0
-        der_energy_i=0
-        #calculate the sums used for the derivative of velocity and energy
-        for j in range(number_of_particles):
-            #calculate the derivative of velocity
-            der_velocity_i+= (-1)*mass_of_particle*(pressure[i]/density[i]**2 + pressure[j]/density[j]**2+visc)*Delta_W_value[i,j]
+        #make a list of density_i the same length as the number of particles
+        density_i=density[i]*np.ones(number_of_particles)
+        #same for pressure
+        pressure_i=pressure[i]*np.ones(number_of_particles)
+        #same for velocity
+        velocity_y_i=velocity_y[i]*np.ones(number_of_particles)
+        velocity_x_i=velocity_x[i]*np.ones(number_of_particles)
+        velocity_z_i=velocity_z[i]*np.ones(number_of_particles)
 
-            #calculate the derivative of energy
-            der_energy_i+= 1/2 * mass_of_particle * (pressure[i] /density[i]**2 + pressure[j]/density[j]**2+visc) * (velocity_x[i] -velocity_x[j]) * Delta_W_value[i,j]
+        #calculate the derivative of the velocity
+        Derivative_velocity_x[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:])
+        Derivative_velocity_y[i]=0
+        Derivative_velocity_z[i]=0
 
-        if der_energy_i<0:
-            der_energy_i=0
-
-        #add the  velocity and energy to the derivative state vector
-        Derivative_velocity_x[i] = der_velocity_i
-        Derivative_energy[i] = der_energy_i
-    
-
+        #calculate the derivative of the energy
+        Derivative_energy[i]=np.sum((1/2)*mass_of_particle*(pressure_i/density_i**2 +pressure/density**2 + visc[i,:])*(velocity_x_i-velocity_x)*Delta_W_value[i,:])
+        if Derivative_energy[i]<0:
+            Derivative_energy[i]=0
 
     State_vector_dir[:,0]=Derivative_x_values
     State_vector_dir[:,1]=Derivative_y_values
@@ -185,12 +189,10 @@ def G_function(State_vector,t):
     State_vector_dir[:,6]=Derivative_velocity_z
     State_vector_dir[:,7]=Derivative_energy
 
-
     State_vector[:,3]=density
 
-
-
     return State_vector_dir
+
 # Set the initial conditions
 t=0
 h=0.005
@@ -211,8 +213,6 @@ result = np.zeros((int((t_end - t) / h)+1, number_of_particles, len(initial_cond
 
 # Set the initial conditions
 result[0]=State_vector
-
-
 
 # Run the simulation and store the results
 from tqdm import tqdm
@@ -249,26 +249,33 @@ scatters = [ax.scatter([], [],s=5) for ax in axs]
 def init():
     for scatter in scatters:
         scatter.set_offsets(np.empty((0, 2))) # use empty 2D array
-    axs[0].set_title('density')
+
+    #set title for entire figure
+    fig.suptitle('1D SPH simulation', fontsize=16)
+    axs[0].set_title('Density')
     axs[0].set_xlabel('x')
+    axs[0].set_ylabel('Density (Kg/m^3)')
     axs[0].set_xlim([np.min(x), np.max(x)])
     axs[0].set_ylim([np.min(density)-0.1, np.max(density)+0.1])
 
-    axs[1].set_title('pressure')
+    axs[1].set_title('Pressure')
     axs[1].set_xlabel('x')
+    axs[1].set_ylabel('Pressure (N/m^3)')
     axs[1].set_xlim([np.min(x), np.max(x)])
     #axs[1].set_ylim([np.min(pressure), np.max(pressure)])
     axs[1].set_ylim([np.min(pressure)-0.1, np.max(pressure)+0.1])
 
-    axs[2].set_title('velocity_x')
+    axs[2].set_title('velocity(x)')
     axs[2].set_xlabel('x')
+    axs[2].set_ylabel('Velocity(x) (m/s)')
     axs[2].set_xlim([np.min(x), np.max(x)])
     #axs[2].set_ylim([np.min(velocity_x), np.max(velocity_x)])
     axs[2].set_ylim([np.min(velocity_x)-0.1, np.max(velocity_x)+0.1])
 
 
-    axs[3].set_title('energy')
+    axs[3].set_title('Internal energy')
     axs[3].set_xlabel('x')
+    axs[3].set_ylabel('Internal energy (J/Kg)')
     axs[3].set_xlim([np.min(x), np.max(x)])
     #axs[3].set_ylim([np.min(energy), np.max(energy)])
     axs[3].set_ylim([np.min(energy)-0.1, np.max(energy)+0.1])
@@ -289,16 +296,14 @@ def update(frame):
             y_data = energy[frame]
         data = np.column_stack((x_data, y_data))
         scatter.set_offsets(data)
-        
-        
     return scatters
 
 #anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True)
 
 #animate at half the speed
 anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True, interval=100)
-writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
-anim.save('no_visc.mp4',writer=writer)
+writer=animation.FFMpegWriter(fps=3,extra_args=['-vcodec', 'libx264'])
+anim.save('with_visc.mp4',writer=writer)
 
 plt.close()
 
