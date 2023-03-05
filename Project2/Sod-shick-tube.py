@@ -19,26 +19,27 @@ initial_conditions_x_greater_0=[0.25,0,0,0,1.795]
 
 mass_of_particle=0.001875
 
-
-domain=[-0.6,0.6]
-number_of_ghost_particles=10
-positional_domain=[10,410]
-
-
-
-
 #Populate the x axis
-small_step=0.6/80
+small_step=0.6/320
+large_step=0.6/80
 start=-0.6
 State_vector=[]
-for i in np.linspace(-0.6,0,320):
+for i in np.linspace(0,-0.6,320):
     State_vector.append((i, 0, 0, initial_conditions_x_less_or_equal_0[0], initial_conditions_x_less_or_equal_0[1], initial_conditions_x_less_or_equal_0[2], initial_conditions_x_less_or_equal_0[3], initial_conditions_x_less_or_equal_0[4]))
-for i in np.linspace(0+small_step,0.6,80):
+#add 10 ghost particles to the left with the same distance between them as the other left particles
+for i in np.linspace(-0.6-small_step,-0.6-10*small_step,10):
+    State_vector.append((i, 0, 0, initial_conditions_x_less_or_equal_0[0], initial_conditions_x_less_or_equal_0[1], initial_conditions_x_less_or_equal_0[2], initial_conditions_x_less_or_equal_0[3], initial_conditions_x_less_or_equal_0[4]))
+
+for i in np.linspace(0+large_step,0.6,80):
     State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
+
+#add 10 ghost particles to the right with the same distance between them as the other right particles
+for i in np.linspace(0.6+large_step,0.6+10*large_step,10):
+    State_vector.append((i, 0, 0, initial_conditions_x_greater_0[0], initial_conditions_x_greater_0[1], initial_conditions_x_greater_0[2], initial_conditions_x_greater_0[3], initial_conditions_x_greater_0[4]))
+
 State_vector=np.array(State_vector)
 x=State_vector[:,0]
 number_of_particles=len(x)
-
 
 #d=1
 #h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
@@ -69,7 +70,15 @@ def W_derivat(dx,h):
     else:
         return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
     
-
+#vescocity
+def vesc(h_ij,c_ij,x_ij,v_ij,density_ij):
+    alpha=1
+    beta=1
+    phi=0.1*h_ij
+    theta_ij=(h_ij*v_ij*x_ij)/(norm(x_ij)**2+phi**2)
+    result=(-alpha*c_ij*theta_ij+beta*theta_ij**2)/(density_ij)
+    return result
+    
 
 #position in x direction 0
 #position in y direction 1
@@ -105,8 +114,8 @@ def G_function(State_vector,t):
     #h-list
     #defoult values for right and left side
     
-    h_1=0.002*2.5
-    h_2=h_1*5
+    h_1=0.006
+    h_2=0.006
     
     #create a array of h values with length of the number of particles
     h_list=np.zeros(number_of_particles)
@@ -117,7 +126,9 @@ def G_function(State_vector,t):
 
     #calculate the distance between the particles
     dx= x_values[:, np.newaxis] - x_values
-    
+    dv= velocity_x[:, np.newaxis] - velocity_x
+
+
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
 
@@ -133,13 +144,28 @@ def G_function(State_vector,t):
                 W_value[i, j] = W(dx[i,j], h_ij)
                 Delta_W_value[i, j] = W_derivat(dx[i, j], h_ij)
 
-
+    #find what positions in the array x_values are smaller than -0.4 and bigger than 0.4
+    position_x_values_1=np.where((x_values<-0.6))
+    position_x_values_2=np.where((x_values>0.6))
 
     density=np.sum(mass_of_particle*W_value,axis=1)
+    for i in position_x_values_1:
+        #largest value in the array position_x_values_1
+        density[i]=density[position_x_values_1[-1]]
+    for i in position_x_values_2:
+        #largest value in the array position_x_values_2
+        density[i]=density[position_x_values_2[0]]
+    
+    
+    
     gamma = 1.4
     pressure = (gamma - 1) * density * energy
 
-    visc=0
+    #calculate the speed of sound
+    c=np.sqrt((gamma-1)*energy)
+
+    visc=np.zeros((number_of_particles, number_of_particles))
+    #print(visc)
 
     #calculte the derivative of poition as the velocity
     Derivative_x_values = velocity_x
@@ -148,25 +174,29 @@ def G_function(State_vector,t):
 
     #density
     for i in range(number_of_particles):
-        #make a list of density_i the same length as the number of particles
-        density_i=density[i]*np.ones(number_of_particles)
-        #same for pressure
-        pressure_i=pressure[i]*np.ones(number_of_particles)
-        #same for velocity
-        velocity_y_i=velocity_y[i]*np.ones(number_of_particles)
-        velocity_x_i=velocity_x[i]*np.ones(number_of_particles)
-        velocity_z_i=velocity_z[i]*np.ones(number_of_particles)
+        if x_values[i]<-0.6 or x_values[i]>0.6:
+            pass
+        else:
+            #make a list of density_i the same length as the number of particles
+            density_i=density[i]*np.ones(number_of_particles)
+            #same for pressure
+            pressure_i=pressure[i]*np.ones(number_of_particles)
+            #same for velocity
+            velocity_y_i=velocity_y[i]*np.ones(number_of_particles)
+            velocity_x_i=velocity_x[i]*np.ones(number_of_particles)
+            velocity_z_i=velocity_z[i]*np.ones(number_of_particles)
 
-        #calculate the derivative of the velocity
-        Derivative_velocity_x[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc)*Delta_W_value[i,:])
-        Derivative_velocity_y[i]=0
-        Derivative_velocity_z[i]=0
+            #calculate the derivative of the velocity
+            Derivative_velocity_x[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:])
+            Derivative_velocity_y[i]=0
+            Derivative_velocity_z[i]=0
 
-        #calculate the derivative of the energy
-        Derivative_energy[i]=np.sum((1/2)*mass_of_particle*(pressure_i/density_i**2 +pressure/density**2 + visc)*(velocity_x_i-velocity_x)*Delta_W_value[i,:])
-        if Derivative_energy[i]<0:
-            Derivative_energy[i]=0
-
+            #calculate the derivative of the energy
+            Derivative_energy[i]=np.sum((1/2)*mass_of_particle*(pressure_i/density_i**2 +pressure/density**2 + visc[i,:])*(velocity_x_i-velocity_x)*Delta_W_value[i,:])
+            if Derivative_energy[i]<0:
+                Derivative_energy[i]=0
+    
+    #set the 
     State_vector_dir[:,0]=Derivative_x_values
     State_vector_dir[:,1]=Derivative_y_values
     State_vector_dir[:,2]=Derivative_z_values
@@ -238,24 +268,24 @@ def init():
         scatter.set_offsets(np.empty((0, 2))) # use empty 2D array
 
     #set title for entire figure
-    fig.suptitle('1D SPH simulation', fontsize=16)
+    fig.suptitle('1D SPH simulation, no arteficial viscosity', fontsize=16)
     axs[0].set_title('Density')
     axs[0].set_xlabel('x')
     axs[0].set_ylabel('Density (Kg/m^3)')
-    axs[0].set_xlim([np.min(x), np.max(x)])
+    axs[0].set_xlim([-0.6, 0.6])
     axs[0].set_ylim([np.min(density)-0.1, np.max(density)+0.1])
 
     axs[1].set_title('Pressure')
     axs[1].set_xlabel('x')
     axs[1].set_ylabel('Pressure (N/m^3)')
-    axs[1].set_xlim([np.min(x), np.max(x)])
+    axs[1].set_xlim([-0.6, 0.6])
     #axs[1].set_ylim([np.min(pressure), np.max(pressure)])
     axs[1].set_ylim([np.min(pressure)-0.1, np.max(pressure)+0.1])
 
     axs[2].set_title('velocity(x)')
     axs[2].set_xlabel('x')
     axs[2].set_ylabel('Velocity(x) (m/s)')
-    axs[2].set_xlim([np.min(x), np.max(x)])
+    axs[2].set_xlim([-0.6, 0.6])
     #axs[2].set_ylim([np.min(velocity_x), np.max(velocity_x)])
     axs[2].set_ylim([np.min(velocity_x)-0.1, np.max(velocity_x)+0.1])
 
@@ -263,7 +293,7 @@ def init():
     axs[3].set_title('Internal energy')
     axs[3].set_xlabel('x')
     axs[3].set_ylabel('Internal energy (J/Kg)')
-    axs[3].set_xlim([np.min(x), np.max(x)])
+    axs[3].set_xlim([-0.6, 0.6])
     #axs[3].set_ylim([np.min(energy), np.max(energy)])
     axs[3].set_ylim([np.min(energy)-0.1, np.max(energy)+0.1])
 
@@ -294,5 +324,6 @@ anim.save('no_visc.mp4',writer=writer)
 
 plt.close()
 
-plt.show()
+np.savetxt("no_visc.csv", result[-1], delimiter=",")
+
 #"""
