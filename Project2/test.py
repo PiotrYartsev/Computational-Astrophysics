@@ -5,11 +5,6 @@ import numpy as np
 from numpy.linalg import norm 
 import sys
 import numpy
-import matplotlib
-matplotlib.use("TkAgg")
-import matplotlib.animation as animation
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.animation import FuncAnimation
 numpy.set_printoptions(threshold=sys.maxsize)
 #set the initial conditions
 
@@ -96,14 +91,14 @@ def G_function(State_vector,t):
 
     #h-list
     #defoult values for right and left side
-    
+    """
     h_1=0.002*2.5
     h_2=h_1*5
     
     """
     h_1=0.006
     h_2=0.006
-    """
+    
     #create a list of h values
     h_list=[]
 
@@ -116,7 +111,6 @@ def G_function(State_vector,t):
     #calculate the distance between the particles
     dx= x_values[:, np.newaxis] - x_values
     
-
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
 
@@ -144,7 +138,7 @@ def G_function(State_vector,t):
         pressure[i] = (gamma - 1) * density[i] * energy[i]
     """
     pressure = (gamma - 1) * density * energy
-
+    print("pressure",pressure.shape)
     
 
     visc=0
@@ -167,14 +161,27 @@ def G_function(State_vector,t):
             #calculate the derivative of energy
             der_energy_i+= 1/2 * mass_of_particle * (pressure[i] /density[i]**2 + pressure[j]/density[j]**2+visc) * (velocity_x[i] -velocity_x[j]) * Delta_W_value[i,j]
 
-        if der_energy_i<0:
+        """if der_energy_i<0:
+            print("negative energy",der_energy_i)
             der_energy_i=0
-
+        """
         #add the  velocity and energy to the derivative state vector
         Derivative_velocity_x[i] = der_velocity_i
         Derivative_energy[i] = der_energy_i
     
-
+    #set the values to 0 for particles within 10 of the walls
+    """
+    fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+    axs[0].plot(x_values, density, 'o')
+    axs[0].set_title('density')
+    axs[1].plot(x_values, pressure, 'o')
+    axs[1].set_title('pressure')
+    axs[2].plot(x_values, Derivative_velocity_x, 'o')
+    axs[2].set_title('der_velocity')
+    axs[3].plot(x_values, Derivative_energy, 'o')
+    axs[3].set_title('der_energy')
+    plt.show()
+    """
 
     State_vector_dir[:,0]=Derivative_x_values
     State_vector_dir[:,1]=Derivative_y_values
@@ -194,7 +201,7 @@ def G_function(State_vector,t):
 # Set the initial conditions
 t=0
 h=0.005
-t_end=h*40
+t_end=h*5
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -297,10 +304,5 @@ def update(frame):
 
 #animate at half the speed
 anim = FuncAnimation(fig, update, frames=result.shape[0], init_func=init, blit=True, interval=100)
-writer=animation.FFMpegWriter(fps=30,extra_args=['-vcodec', 'libx264'])
-anim.save('no_visc.mp4',writer=writer)
-
-plt.close()
-
 plt.show()
 #"""

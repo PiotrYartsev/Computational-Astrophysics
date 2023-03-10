@@ -37,12 +37,10 @@ for i in range(len(lines)):
 print(State_vector)
 #x,y,z,vx,vy,vz,mass, density, pressure, energy
 number_of_particles=len(lines)
-
-
-
+"""
 #kernel functions
 def W(dx,h):
-    a_d=1/h
+    a_d=3/(2*math.pi*h**3)
     r=norm(dx)
     R=r/h
     if R<=1 and R>=0:
@@ -53,7 +51,7 @@ def W(dx,h):
 
 #derivative of the kernel function
 def W_derivat(dx,h):
-    a_d=1/h
+    a_d=3/(2*math.pi*h**3)
     #print("a_d",a_d)
     r=norm(dx)
     #print("r",r)
@@ -63,57 +61,44 @@ def W_derivat(dx,h):
         return a_d * (-2 + 3/2 * R) * dx / h**2
     else:
         return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
-     
-
-#position in x direction 0
-#position in y direction 1
-#position in z direction 2
-#density 3 
-#velocity in x direction 4
-#velocity in y direction 5
-#velocity in z direction 6
-#energy 7
-import time as time
+    
+def phi_derivative(dx,h):
+    r=norm(dx)
+    #print("r",r)
+    R=r/h
+    #print("R",R)
+    if R<=1 and R>=0:
+        return (1/h**2)*(4/3 * R - 6/3 *R**3+ 1/2  * R**4)
+    elif R>=1 and R<=2:
+        return (1/h**2)*(8/3 * R - 3*R**2   +   6/5  *R**3-   1/6  *R**4-1/(15*R**2))
+    else:
+        return(1/r**2)
+    
 
 def G_function(State_vector,t):
-    State_vector_dir = np.zeros((number_of_particles, len(initial_conditions_x_less_or_equal_0) + 3))
+    State_vector_dir = np.zeros((number_of_particles, 8))
     x_values=State_vector[:,0]
     y_values=State_vector[:,1]
     z_values=State_vector[:,2]
-    density=State_vector[:,3]
     velocity_x=State_vector[:,4]
     velocity_y=State_vector[:,5]
     velocity_z=State_vector[:,6]
-    energy=State_vector[:,7]
+    mass_of_particle=State_vector[:,3]
+    density=State_vector[:,7]
+    pressure=State_vector[:,8]
+    energy=State_vector[:,9]
 
-
-    Derivative_x_values=State_vector_dir[:,0]
-    Derivative_y_values=State_vector_dir[:,1]
-    Derivative_z_values=State_vector_dir[:,2]
-    Derivative_density=State_vector_dir[:,3]
-    Derivative_velocity_x=State_vector_dir[:,4]
-    Derivative_velocity_y=State_vector_dir[:,5]
-    Derivative_velocity_z=State_vector_dir[:,6]
-    Derivative_energy=State_vector_dir[:,7]
-
-    #h-list
-    #defoult values for right and left side
-    
-    #d=1
-    #h_1=1.3*(mass_of_particle/initial_conditions_x_less_or_equal_0[0])**(1/d)
-    #h_2=1.3*(mass_of_particle/initial_conditions_x_greater_0[0])**(1/d)
-    
     #create a array of h values with length of the number of particles
-    h_list=np.zeros(number_of_particles)
-
-    #set the h values for the left and right side using broadcasting
-    h_list[x_values<=0]=h_1
-    h_list[x_values>0]=h_2
+    d=3
+    h_list=1.3*(mass_of_particle/density)**(1/d)
 
     #calculate the distance between the particles
     dx= x_values[:, np.newaxis] - x_values
-    dv= velocity_x[:, np.newaxis] - velocity_x
-
+    dy= y_values[:, np.newaxis] - y_values
+    dz= z_values[:, np.newaxis] - z_values
+    dvx= velocity_x[:, np.newaxis] - velocity_x
+    dvy= velocity_y[:, np.newaxis] - velocity_y
+    dvz= velocity_z[:, np.newaxis] - velocity_z
 
     #define the kernel function
     W_value = np.zeros((number_of_particles, number_of_particles))
