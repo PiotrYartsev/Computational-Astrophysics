@@ -20,7 +20,7 @@ lines=file.readlines()
 #close the file
 file.close()
 
-State_vector=np.zeros((len(lines),9))
+State_vector=np.zeros((len(lines),10))
 for i in range(len(lines)):
     #print(line)
     line=lines[i]
@@ -34,13 +34,17 @@ for i in range(len(lines)):
     State_vector[i,6]=float(line[6])
     State_vector[i,7]=float(line[7])
     State_vector[i,8]=float(line[8])
+    gamma = 1.4
+    density = float(line[7])
+    pressure = float(line[8])
+    energy = pressure/((gamma - 1) * density)
+    State_vector[i,9]=energy
 
 
-
-#print(State_vector)
+print(State_vector)
 #x,y,z,vx,vy,vz,mass, density, pressure, energy
 number_of_particles=len(lines)
-
+#
 #kernel functions
 def W(dx,h):
     a_d=3/(2*math.pi*h**3)
@@ -79,7 +83,7 @@ def phi_derivative(dx,h):
     
 
 def G_function(State_vector,t):
-    State_vector_dir = np.zeros((number_of_particles, 9))
+    State_vector_dir = np.zeros((number_of_particles, 10))
     x_values=State_vector[:,0]
     y_values=State_vector[:,1]
     z_values=State_vector[:,2]
@@ -89,6 +93,7 @@ def G_function(State_vector,t):
     mass_of_particle=State_vector[:,6]
     density=State_vector[:,7]
     pressure=State_vector[:,8]
+    energy=State_vector[:,9]
 
     Derivative_x_values=State_vector_dir[:,0]
     Derivative_y_values=State_vector_dir[:,1]
@@ -99,7 +104,7 @@ def G_function(State_vector,t):
     Derivative_mass_of_particle=State_vector_dir[:,6]
     Derivative_density=State_vector_dir[:,7]
     Derivative_pressure=State_vector_dir[:,8]
-
+    Derivative_energy=State_vector_dir[:,9]
 
     #create a array of h values with length of the number of particles
     d=3
@@ -115,7 +120,7 @@ def G_function(State_vector,t):
     dvz= velocity_z[:, np.newaxis] - velocity_z
 
     #define the kernel function
-    #W_value = np.zeros((number_of_particles, number_of_particles,3))
+    W_value = np.zeros((number_of_particles, number_of_particles,3))
 
     #define the derivative of the kernel function
     Delta_W_value = np.zeros((number_of_particles, number_of_particles,3))
@@ -132,9 +137,9 @@ def G_function(State_vector,t):
             phi_value[i, j,1] = phi_derivative(dy[i, j], h_ij)
             phi_value[i, j,2] = phi_derivative(dz[i, j], h_ij)
             if norm(dx[i, j])<=(k*(h_ij)):
-                #W_value[i, j,0] = W(dx[i,j], h_ij)
-                #W_value[i, j,1] = W(dy[i,j], h_ij)
-                #W_value[i, j,2] = W(dz[i,j], h_ij)
+                W_value[i, j,0] = W(dx[i,j], h_ij)
+                W_value[i, j,1] = W(dy[i,j], h_ij)
+                W_value[i, j,2] = W(dz[i,j], h_ij)
                 Delta_W_value[i, j,0] = W_derivat(dx[i, j], h_ij)
                 Delta_W_value[i, j,1] = W_derivat(dy[i, j], h_ij)
                 Delta_W_value[i, j,2] = W_derivat(dz[i, j], h_ij)
@@ -165,8 +170,8 @@ def G_function(State_vector,t):
             Derivative_velocity_y[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:,1])
             Derivative_velocity_z[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:,2])
 
-            
 
+    Der
     return(h_list)
 
 print(G_function(State_vector,0))
