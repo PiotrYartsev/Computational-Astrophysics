@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.integrate import RK45
 import matplotlib.animation as animation
 import time
+import tqdm as tqdm
 
 #___________________________________________ CONTROLS _____________________________________________#
 intvar = 1
