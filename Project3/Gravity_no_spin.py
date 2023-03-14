@@ -14,7 +14,7 @@ numpy.set_printoptions(threshold=sys.maxsize)
 #set the initial conditions
 
 #open file to read
-file=open("C:\\Users\\MSI PC\\Desktop\\Computational-Astrophysics\\Project3\\Planet300.dat","r")
+file=open("C:\\Users\\piotr\\Documents\\GitHub\\Computational-Astrophysics\\Project3\\Planet300.dat","r")
 #read the file
 lines=file.readlines()
 #close the file
