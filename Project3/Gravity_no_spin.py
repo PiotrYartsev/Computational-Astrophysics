@@ -43,12 +43,6 @@ for i in range(len(lines)):
 #x,y,z,vx,vy,vz,mass, density, pressure, energy
 number_of_particles=len(lines)
 
-
-
-
-
-
-
 #kernel functions
 def W(dx, h):
     a_d = 3 / (2 * np.pi * h**3)
@@ -62,28 +56,40 @@ def W(dx, h):
     return result
 
 #derivative of the kernel function
-def W_derivat(dx, h):
-    a_d = 3 / (2 * np.pi * h**3)
+def smoothingdW(r, dX, hmean):
+
+    ad = (3/(2*np.pi*hmean**3)) # Alpha-d factor
+    R = r/hmean
+    smoothdW = np.zeros((3, len(R))) 
+    
+    # Define masks
+    mask_01 = (R >= 0) & (R < 1) # First condition
+    mask_02 = (R >= 1) & (R < 2) # Second condition
+      
+    # Stack individual masked vectors into arrays
+    dX_1 = dX[:,mask_01]
+    dX_2 = dX[:,mask_02]
+    
+    # Calculate all values for the derivatives of the smoothing function given the conditions
+    constant1 = ad*(-2 + 1.5*(R[mask_01]))/(hmean**2)    
+    smoothdW[:,mask_01] = constant1*(dX_1)
+    
+    constant2 = -ad*(0.5*((2-(R[mask_02]))**2))/(hmean*r[mask_02])    
+    smoothdW[:,mask_02] = constant2*(dX_2)
+
+    
+    return smoothdW
+
+def phi_derivative(dx, h):
     r = np.linalg.norm(dx, axis=1)
     R = r / h
-    result = np.zeros_like(dx)
+    result = np.zeros(len(dx))
     mask1 = np.logical_and(R >= 0, R <= 1)
     mask2 = np.logical_and(R >= 1, R <= 2)
-    result[mask1] = a_d * (-2 + 3/2 * R[mask1]) * dx[mask1] / h**2
-    result[mask2] = -a_d * ((1/2) * (2 - R[mask2])**2) * dx[mask2] / (h * r[mask2])
+    result[mask1] = (1/h**2)*(4/3 * R[mask1] - 6/3 *R[mask1]**3+ 1/2  * R[mask1]**4)
+    result[mask2] = (1/h**2)*(8/3 * R[mask2] - 3*R[mask2]**2   +   6/5  *R[mask2]**3-   1/6  *R[mask2]**4-1/(15*R[mask2]**2))
+    result[~np.logical_or(mask1, mask2)] = (1/r[~np.logical_or(mask1, mask2)]**2)
     return result
-
-def phi_derivative(dx,h):
-    r=norm(dx)
-    #print("r",r)
-    R=r/h
-    #print("R",R)
-    if R<=1 and R>=0:
-        return (1/h**2)*(4/3 * R - 6/3 *R**3+ 1/2  * R**4)
-    elif R>=1 and R<=2:
-        return (1/h**2)*(8/3 * R - 3*R**2   +   6/5  *R**3-   1/6  *R**4-1/(15*R**2))
-    else:
-        return(1/r**2)
     
 
 def G_function(State_vector,t):
@@ -111,65 +117,27 @@ def G_function(State_vector,t):
     Derivative_energy=State_vector_dir[:,9]
 
     
-    h_constant = 1e7
-
-
     #calculate the distance between the particles
     dx= x_values[:, np.newaxis] - x_values
     dy= y_values[:, np.newaxis] - y_values
     dz= z_values[:, np.newaxis] - z_values
+
     dvx= velocity_x[:, np.newaxis] - velocity_x
     dvy= velocity_y[:, np.newaxis] - velocity_y
     dvz= velocity_z[:, np.newaxis] - velocity_z
 
-    #define the kernel function
-    W_value = np.zeros((number_of_particles, number_of_particles,3))
-
+    dr=np.array((dx,dy,dz))
+    dv=np.array((dvx,dvy,dvz))
+    print(dr.shape)
+    r=np.linalg.norm(dr, axis=0)
+    print(r.shape)
     #define the derivative of the kernel function
     Delta_W_value = np.zeros((number_of_particles, number_of_particles,3))
 
-    #define the gravitational potential
-    phi_value = np.zeros((number_of_particles, number_of_particles,3))
-
     #calculate the kernel function and the derivative of the kernel function
-    k=2
-    
-    W_value[i, j,0] = W(dx[i,j], h_ij)
-    W_value[i, j,1] = W(dy[i,j], h_ij)
-    W_value[i, j,2] = W(dz[i,j], h_ij)
-    Delta_W_value[i, j,0] = W_derivat(dx[i, j], h_ij)
-    Delta_W_value[i, j,1] = W_derivat(dy[i, j], h_ij)
-    Delta_W_value[i, j,2] = W_derivat(dz[i, j], h_ij)
-
-    print("pressure",pressure)
-
-    visc=np.zeros((number_of_particles, number_of_particles))
-
-
-    Derivative_x_values = velocity_x
-    Derivative_y_values = velocity_y
-    Derivative_z_values = velocity_z
-    for i in range(number_of_particles):
-        if x_values[i]<-0.6 or x_values[i]>0.6:
-            pass
-        else:
-            #make a list of density_i the same length as the number of particles
-            density_i=density[i]*np.ones(number_of_particles)
-            #same for pressure
-            pressure_i=pressure[i]*np.ones(number_of_particles)
-            #same for velocity
-            velocity_y_i=velocity_y[i]*np.ones(number_of_particles)
-            velocity_x_i=velocity_x[i]*np.ones(number_of_particles)
-            velocity_z_i=velocity_z[i]*np.ones(number_of_particles)
-
-            #calculate the derivative of the velocity
-            Derivative_velocity_x[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:,0])
-            Derivative_velocity_y[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:,1])
-            Derivative_velocity_z[i]=np.sum(-mass_of_particle*(pressure_i/density_i**2+pressure/density**2+visc[i,:])*Delta_W_value[i,:,2])
-
-
-    Der
-    return(h_list)
+    h_constant = 1e7    
+    Delta_W_value = smoothingdW(r, dr, h_constant)
+    return(Delta_W_value)
 
 print(G_function(State_vector,0))
 #"""
