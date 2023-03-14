@@ -40,35 +40,39 @@ for i in range(len(lines)):
     energy = pressure/((gamma - 1) * density)
     State_vector[i,9]=energy
 
-
-print(State_vector)
 #x,y,z,vx,vy,vz,mass, density, pressure, energy
 number_of_particles=len(lines)
-#
-#kernel functions
-def W(dx,h):
-    a_d=3/(2*math.pi*h**3)
-    r=norm(dx)
-    R=r/h
-    if R<=1 and R>=0:
-        return a_d * (2/3 - R**2 + 1/2 * R**3)
-    else:
-        return a_d * (1/6 * (2-R)**3)
 
+
+
+
+
+
+
+#kernel functions
+def W(dx, h):
+    a_d = 3 / (2 * np.pi * h**3)
+    r = np.linalg.norm(dx, axis=1)
+    R = r / h
+    result = np.zeros(len(dx))
+    mask1 = np.logical_and(R >= 0, R <= 1)
+    mask2 = np.logical_and(R >= 1, R <= 2)
+    result[mask1] = a_d * (2/3 - R[mask1]**2 + 1/2 * R[mask1]**3)
+    result[mask2] = a_d * (1/6 * (2-R[mask2])**3)
+    return result
 
 #derivative of the kernel function
-def W_derivat(dx,h):
-    a_d=3/(2*math.pi*h**3)
-    #print("a_d",a_d)
-    r=norm(dx)
-    #print("r",r)
-    R=r/h
-    #print("R",R)
-    if R<=1 and R>=0:
-        return a_d * (-2 + 3/2 * R) * dx / h**2
-    else:
-        return -a_d * ((1/2) * (2 - R)**2) * dx / (h * r)
-    
+def W_derivat(dx, h):
+    a_d = 3 / (2 * np.pi * h**3)
+    r = np.linalg.norm(dx, axis=1)
+    R = r / h
+    result = np.zeros_like(dx)
+    mask1 = np.logical_and(R >= 0, R <= 1)
+    mask2 = np.logical_and(R >= 1, R <= 2)
+    result[mask1] = a_d * (-2 + 3/2 * R[mask1]) * dx[mask1] / h**2
+    result[mask2] = -a_d * ((1/2) * (2 - R[mask2])**2) * dx[mask2] / (h * r[mask2])
+    return result
+
 def phi_derivative(dx,h):
     r=norm(dx)
     #print("r",r)
@@ -106,9 +110,8 @@ def G_function(State_vector,t):
     Derivative_pressure=State_vector_dir[:,8]
     Derivative_energy=State_vector_dir[:,9]
 
-    #create a array of h values with length of the number of particles
-    d=3
-    h_list=1.3*(mass_of_particle/density)**(1/d)
+    
+    h_constant = 1e7
 
 
     #calculate the distance between the particles
@@ -130,19 +133,13 @@ def G_function(State_vector,t):
 
     #calculate the kernel function and the derivative of the kernel function
     k=2
-    for i in tqdm(range(number_of_particles)):
-        for j in range(number_of_particles):
-            h_ij=(h_list[i]+h_list[j])/2
-            phi_value[i, j,0] = phi_derivative(dx[i, j], h_ij)
-            phi_value[i, j,1] = phi_derivative(dy[i, j], h_ij)
-            phi_value[i, j,2] = phi_derivative(dz[i, j], h_ij)
-            if norm(dx[i, j])<=(k*(h_ij)):
-                W_value[i, j,0] = W(dx[i,j], h_ij)
-                W_value[i, j,1] = W(dy[i,j], h_ij)
-                W_value[i, j,2] = W(dz[i,j], h_ij)
-                Delta_W_value[i, j,0] = W_derivat(dx[i, j], h_ij)
-                Delta_W_value[i, j,1] = W_derivat(dy[i, j], h_ij)
-                Delta_W_value[i, j,2] = W_derivat(dz[i, j], h_ij)
+    
+    W_value[i, j,0] = W(dx[i,j], h_ij)
+    W_value[i, j,1] = W(dy[i,j], h_ij)
+    W_value[i, j,2] = W(dz[i,j], h_ij)
+    Delta_W_value[i, j,0] = W_derivat(dx[i, j], h_ij)
+    Delta_W_value[i, j,1] = W_derivat(dy[i, j], h_ij)
+    Delta_W_value[i, j,2] = W_derivat(dz[i, j], h_ij)
 
     print("pressure",pressure)
 

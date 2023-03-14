@@ -5,18 +5,18 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.integrate import RK45
 import matplotlib.animation as animation
 import time
-import tqdm as tqdm
+from tqdm import tqdm
 
 #___________________________________________ CONTROLS _____________________________________________#
 intvar = 1
 gravity_on = 1
-twoplanets = 1
+twoplanets = 0
 
 #_______________________________________ INITIAL CONDITIONS _______________________________________#
 # Legend: x, y, z, vx, vy, vz, m, rho, p, energy
 
 # Define initial state vector
-initialcond = np.loadtxt('C:\\Users\\MSI PC\\Desktop\\Computational-Astrophysics\\Project3\\Planet300.dat')
+initialcond = np.loadtxt("C:\\Users\\piotr\\Documents\\GitHub\\Computational-Astrophysics\\Project3\\Planet300.dat")
 particles = len(initialcond)
 
 # Define parameters
@@ -385,7 +385,9 @@ if intvar == 1:
     S_i = np.zeros([steps, N, nparams])
     
     # Loop for the integration
+    bar1=tqdm(total=steps)
     for i in range(steps):
+        bar1.update(1)
         S_i[i] = np.array(S_int.y).reshape(N, nparams) # Select current state, reshape and store
         S_int.step()        
         print(i, S_int.step_size)
@@ -393,7 +395,9 @@ if intvar == 1:
     # Thanks Lukas, you fam 
     fig = plt.figure()
     ax = fig.add_subplot((111), projection='3d')
+    bar2=tqdm(total=1500)
     for i in range(1500):
+        bar2.update(1)
         if i % 15:
             ax.scatter(S_i[i,:,0], S_i[i,:,1], S_i[i,:,2], c=S_i[i,:,6], s=5, cmap='hot')
             ax.set_xlim(-2e8, 2e8)
