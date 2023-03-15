@@ -67,7 +67,7 @@ def W_derivat(dx, h, r):
     return result
 
 
-def phi_derivative(dx, h, r):
+def gravity(dx, h, r):
     r = np.array([r, r, r])
     R = r / h
     result = np.zeros_like(dx)
@@ -184,7 +184,7 @@ def G_function(State_vector,t):
     #print("Delta_W_value",Delta_W_value.shape)
 
     Gravity_phi = np.zeros((number_of_particles, number_of_particles,3))
-    Gravity_phi = phi_derivative(dr, h_constant,r)
+    Gravity_phi = gravity(dr, h_constant,r)
     #print("Gravity_phi",Gravity_phi.shape)
     
     Visco = np.zeros((number_of_particles, number_of_particles,3))
@@ -255,8 +255,8 @@ Delta_W_value=(G_function(State_vector,0))
 
 # Set the initial conditions
 t=0
-h=0.1
-t_end=10
+h=100
+t_end=h*100
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
