@@ -118,22 +118,27 @@ dems6= densities[positions[5],:]
 
 #make a 2d plot of the x and y positions of the particles and color them by density with a gradient bar on the side
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, sharex='col', sharey='row')
-ax1.scatter(x1, y1, c=dems1, marker='o', s=5)
+im1= ax1.scatter(x1, y1, c=dems1, cmap='viridis', s=5)
 ax1.set_title('t = {:.2f} days'.format(t + positions[0] * h))
-ax2.scatter(x2, y2, c=dems2, marker='o', s=5)
+im2= ax2.scatter(x2, y2, c=dems2, cmap='viridis', s=5)
 ax2.set_title('t = {:.2f} days'.format(t + positions[1] * h))
-ax3.scatter(x3, y3, c=dems3, marker='o', s=5)
+im3= ax3.scatter(x3, y3, c=dems3, cmap='viridis', s=5)
 ax3.set_title('t = {:.2f} days'.format(t + positions[2] * h))
-ax4.scatter(x4, y4, c=dems4, marker='o', s=5)
+im4= ax4.scatter(x4, y4, c=dems4, cmap='viridis', s=5)
 ax4.set_title('t = {:.2f} days'.format(t + positions[3] * h))
-ax5.scatter(x5, y5, c=dems5, marker='o', s=5)
+im5= ax5.scatter(x5, y5, c=dems5, cmap='viridis', s=5)
 ax5.set_title('t = {:.2f} days'.format(t + positions[4] * h))
-ax6.scatter(x6, y6, c=dems6, marker='o', s=5)
+im6= ax6.scatter(x6, y6, c=dems6, cmap='viridis', s=5)
 ax6.set_title('t = {:.2f} days'.format(t + positions[5] * h))
+
+#add a colorbar on the bottom of the plot
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im1, cax=cbar_ax)
+
 fig.suptitle('Density of the {} planet system'.format(planets))
 #leave some space between the plots
 fig.subplots_adjust(hspace=0.5)
-
 
 plt.savefig('density_{}.png'.format(planets))
 plt.close()
@@ -168,25 +173,29 @@ x6= S_i_300[positions[5],:,0]
 y6= S_i_300[positions[5],:,1]
 velocity6= np.sqrt(S_i_300[positions[5],:,3]**2 + S_i_300[positions[5],:,4]**2 + S_i_300[positions[5],:,5]**2)
 
-#make a 2d plot of the x and y positions of the particles and color them by density with a gradient bar on the side
+#make a 2d plot of the x and y positions of the particles and color them by velocity with a gradient bar on the side
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, sharex='col', sharey='row')
-ax1.scatter(x1, y1, c=velocity1, marker='o', s=5)
+im1 = ax1.scatter(x1, y1, c=velocity1, marker='o', s=5)
 ax1.set_title('t = {:.2f} days'.format(t + positions[0] * h))
-ax2.scatter(x2, y2, c=velocity2, marker='o', s=5)
+im2 = ax2.scatter(x2, y2, c=velocity2, marker='o', s=5)
 ax2.set_title('t = {:.2f} days'.format(t + positions[1] * h))
-ax3.scatter(x3, y3, c=velocity3, marker='o', s=5)
+im3 = ax3.scatter(x3, y3, c=velocity3, marker='o', s=5)
 ax3.set_title('t = {:.2f} days'.format(t + positions[2] * h))
-ax4.scatter(x4, y4, c=velocity4, marker='o', s=5)
+im4 = ax4.scatter(x4, y4, c=velocity4, marker='o', s=5)
 ax4.set_title('t = {:.2f} days'.format(t + positions[3] * h))
-ax5.scatter(x5, y5, c=velocity5, marker='o', s=5)
+im5 = ax5.scatter(x5, y5, c=velocity5, marker='o', s=5)
 ax5.set_title('t = {:.2f} days'.format(t + positions[4] * h))
-ax6.scatter(x6, y6, c=velocity6, marker='o', s=5)
+im6 = ax6.scatter(x6, y6, c=velocity6, marker='o', s=5)
 ax6.set_title('t = {:.2f} days'.format(t + positions[5] * h))
+
+#add a colorbar on the bottom of the plot
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im1, cax=cbar_ax)
 
 fig.suptitle('Velocity of the {} planet system'.format(planets))
 #leave some space between the plots
 fig.subplots_adjust(hspace=0.5)
-
 
 plt.savefig('velocity_{}.png'.format(planets))
 plt.close()
@@ -220,7 +229,7 @@ x6= S_i_300[positions[5],:,0]
 y6= S_i_300[positions[5],:,1]
 energy6=energy[positions[5],:]
 
-#make a 2d plot of the x and y positions of the particles and color them by density with a gradient bar on the side
+#make a 2d plot of the x and y positions of the particles and color them by energy with a gradient bar on the side
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, sharex='col', sharey='row')
 ax1.scatter(x1, y1, c=energy1, marker='o', s=5)
 ax1.set_title('t = {:.2f} days'.format(t + positions[0] * h))
@@ -235,11 +244,73 @@ ax5.set_title('t = {:.2f} days'.format(t + positions[4] * h))
 ax6.scatter(x6, y6, c=energy6, marker='o', s=5)
 ax6.set_title('t = {:.2f} days'.format(t + positions[5] * h))
 
+#add a colorbar on the bottom of the plot
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+im = ax1.scatter(x1, y1, c=energy1, marker='o', s=5)
+fig.colorbar(im, cax=cbar_ax)
+
 fig.suptitle('Energy of the {} planet system'.format(planets))
 #leave some space between the plots
 fig.subplots_adjust(hspace=0.5)
 
-
 plt.savefig('energy_{}.png'.format(planets))
 plt.close()
 
+
+
+#positions = np.linspace(0, len(x)-1, 6, dtype=int)
+positions = np.unique((np.linspace(0, len(x) ** 1.25 - 1, 6, dtype=int) ** (1 / 1.5)).astype(int))
+print(len(positions))
+
+x1= S_i_300[positions[0],:,0]
+y1= S_i_300[positions[0],:,1]
+
+press1= pressure[positions[0],:]
+
+x2= S_i_300[positions[1],:,0]
+y2= S_i_300[positions[1],:,1]
+press2= pressure[positions[1],:]
+
+x3= S_i_300[positions[2],:,0]
+y3= S_i_300[positions[2],:,1]
+press3= pressure[positions[2],:]
+
+x4= S_i_300[positions[3],:,0]
+y4= S_i_300[positions[3],:,1]
+press4= pressure[positions[3],:]
+
+x5= S_i_300[positions[4],:,0]
+y5= S_i_300[positions[4],:,1]
+press5= pressure[positions[4],:]
+
+x6= S_i_300[positions[5],:,0]
+y6= S_i_300[positions[5],:,1]
+press6= pressure[positions[5],:]
+
+#make a 2d plot of the x and y positions of the particles and color them by density with a gradient bar on the side
+fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, sharex='col', sharey='row')
+im1= ax1.scatter(x1, y1, c=press1, cmap='viridis', s=5)
+ax1.set_title('t = {:.2f} days'.format(t + positions[0] * h))
+im2= ax2.scatter(x2, y2, c=press2, cmap='viridis', s=5)
+ax2.set_title('t = {:.2f} days'.format(t + positions[1] * h))
+im3= ax3.scatter(x3, y3, c=press3, cmap='viridis', s=5)
+ax3.set_title('t = {:.2f} days'.format(t + positions[2] * h))
+im4= ax4.scatter(x4, y4, c=press4, cmap='viridis', s=5)
+ax4.set_title('t = {:.2f} days'.format(t + positions[3] * h))
+im5= ax5.scatter(x5, y5, c=press5, cmap='viridis', s=5)
+ax5.set_title('t = {:.2f} days'.format(t + positions[4] * h))
+im6= ax6.scatter(x6, y6, c=press6, cmap='viridis', s=5)
+ax6.set_title('t = {:.2f} days'.format(t + positions[5] * h))
+
+#add a colorbar on the bottom of the plot
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im1, cax=cbar_ax)
+
+fig.suptitle('Pressure of the {} planet system'.format(planets))
+#leave some space between the plots
+fig.subplots_adjust(hspace=0.5)
+
+plt.savefig('pressure_{}.png'.format(planets))
+plt.close()
