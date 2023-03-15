@@ -73,9 +73,12 @@ def gravity(dx, h, r):
     result = np.zeros_like(dx)
     mask1 = np.logical_and(R >= 0, R <= 1)
     mask2 = np.logical_and(R >= 1, R <= 2)
+    #if R>2 
+    mask3 = R>2
     result[mask1] = (1/h**2)*(4/3 * R[mask1] - 6/3 * R[mask1]**3 + 1/2 * R[mask1]**4)
     result[mask2] = (1/h**2)*(8/3 * R[mask2] - 3*R[mask2]**2 + 6/5 * R[mask2]**3 - 1/6 * R[mask2]**4 - 1/(15*R[mask2]**2))
-    result[~np.logical_or(mask1, mask2)] = (1/r[~np.logical_or(mask1, mask2)]**2)
+    #if not mask1 or mask2:
+    result[mask3] = 1/(r[mask3]**2)
     
     # Swap the first and last dimensions
     result = result.transpose((1, 2, 0))
@@ -232,10 +235,6 @@ def G_function(State_vector,t):
         if Derivative_energy[i] < 0:
             Derivative_energy[i] = 0
 
-    #make a matrix with the derivatives
-    #print("Derivative_x_values",Derivative_x_values.shape)
-    #print("State_vector_dir[0:]",State_vector_dir[:,0].shape)
-
     State_vector_dir[:,0]=Derivative_x_values
     State_vector_dir[:,1]=Derivative_y_values
     State_vector_dir[:,2]=Derivative_z_values
@@ -255,7 +254,7 @@ Delta_W_value=(G_function(State_vector,0))
 
 # Set the initial conditions
 t=0
-h=100
+h=5
 t_end=h*100
 
 # Initialize the RK45 integrator
@@ -303,11 +302,17 @@ plt.close()"""
 
 
 #animate it in 3D
+t=0
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 x = result[:,:,0]
 y = result[:,:,1]
 z = result[:,:,2]
+
+ax.set_xlim(np.min(x), np.max(x))
+ax.set_ylim(np.min(y), np.max(y))
+ax.set_zlim(np.min(z), np.max(z))
+ax.view_init(elev=20, azim=30) 
 
 def animate(i):
     ax.clear()
@@ -316,7 +321,7 @@ def animate(i):
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
     ax.set_title('Simulation at t = {:.2f}'.format(t + i * h))
-    ax.view_init(elev=20, azim=30)  # adjust the viewing angle
+     # adjust the viewing angle
 
 ani = FuncAnimation(fig, animate, frames=range(0, len(x)), interval=1)
 plt.show()
