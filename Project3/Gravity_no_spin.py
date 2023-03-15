@@ -322,7 +322,8 @@ def animate(i):
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
     ax.set_title('Simulation at t = {:.2f}'.format(t + i * h))
-     # adjust the viewing angle
+    #adjust the viewing angle
+    ax.view_init(elev=20, azim=30)
 
 ani = FuncAnimation(fig, animate, frames=range(0, len(x)), interval=1)
 plt.show()
