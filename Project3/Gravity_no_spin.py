@@ -255,8 +255,8 @@ Delta_W_value=(G_function(State_vector,0))
 
 # Set the initial conditions
 t=0
-h=0.05
-t_end=50
+h=0.1
+t_end=10
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
