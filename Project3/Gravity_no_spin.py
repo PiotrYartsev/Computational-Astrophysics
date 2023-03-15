@@ -226,11 +226,11 @@ def G_function(State_vector,t):
         #calculate the derivative of the mass of the particle
         Derivative_mass_of_particle[i] = 0
         #calculate the derivative of the density
-        Derivative_density[i] = np.sum(mass_of_particle*np.sum((v_1_v_j)*Delta_W_value[i,:,0],axis=1))
+        Derivative_density[i] = np.sum(mass_of_particle*np.sum((v_1_v_j)*Delta_W_value[i,:,0],axis=0))
         #calculate the derivative of the pressure
         Derivative_pressure[i] = 0
         #calculate the derivative of the energy
-        Derivative_energy[i] = 1/2*np.sum(mass_of_particle*((pressure_i/(density_i**2))+(pressure/(density**2))+Visco[i,:,0])*np.sum((v_1_v_j)*Delta_W_value[i,:,0],axis=1))
+        Derivative_energy[i] = 1/2*np.sum(mass_of_particle*((pressure_i/(density_i**2))+(pressure/(density**2))+Visco[i,:,0])*np.sum((v_1_v_j)*Delta_W_value[i,:,0],axis=0))
 
         if Derivative_energy[i] < 0:
             Derivative_energy[i] = 0
@@ -254,8 +254,8 @@ Delta_W_value=(G_function(State_vector,0))
 
 # Set the initial conditions
 t=0
-h=1
-t_end=50
+h=100
+t_end=h*50
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -311,13 +311,12 @@ z = result[:,:,2]
 
 #set permanent axis limits
 
-ax.set_xlim3d(np.min(x), np.max(x))
-ax.set_ylim3d(np.min(y), np.max(y))
-ax.set_zlim3d(np.min(z), np.max(z))
-ax.view_init(elev=20, azim=30) 
 
 def animate(i):
-    ax.clear()
+    ax.set_xlim3d(np.min(x), np.max(x))
+    ax.set_ylim3d(np.min(y), np.max(y))
+    ax.set_zlim3d(np.min(z), np.max(z))
+    ax.view_init(elev=20, azim=30) 
     ax.scatter(x[i], y[i], z[i], c='r', marker='o')
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
@@ -327,4 +326,3 @@ def animate(i):
 
 ani = FuncAnimation(fig, animate, frames=range(0, len(x)), interval=1)
 plt.show()
-
