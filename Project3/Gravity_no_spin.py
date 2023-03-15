@@ -254,8 +254,8 @@ Delta_W_value=(G_function(State_vector,0))
 
 # Set the initial conditions
 t=0
-h=5
-t_end=h*100
+h=1
+t_end=50
 
 # Initialize the RK45 integrator
 def RK4(State_vector, t, h, G_function):
@@ -309,9 +309,11 @@ x = result[:,:,0]
 y = result[:,:,1]
 z = result[:,:,2]
 
-ax.set_xlim(np.min(x), np.max(x))
-ax.set_ylim(np.min(y), np.max(y))
-ax.set_zlim(np.min(z), np.max(z))
+#set permanent axis limits
+
+ax.set_xlim3d(np.min(x), np.max(x))
+ax.set_ylim3d(np.min(y), np.max(y))
+ax.set_zlim3d(np.min(z), np.max(z))
 ax.view_init(elev=20, azim=30) 
 
 def animate(i):
